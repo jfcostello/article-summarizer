@@ -7,8 +7,8 @@ async function scrapeArticle(url, index) {
   await page.goto(url, { waitUntil: "networkidle2" });
 
   const content = await page.evaluate(() => {
-    const article = document.querySelector("article");
-    return article ? article.innerText : "No article content found";
+    const body = document.querySelector("body");
+    return body ? body.innerText : "No content found";
   });
 
   console.log(`URL: ${url}\nContent:\n${content}`);
