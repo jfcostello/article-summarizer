@@ -1,21 +1,24 @@
 import feedparser
+from supabase import create_client, Client
 
-# Define the URL of the RSS feed
-url = "https://www.theverge.com/rss/index.xml"
+# Supabase setup
+url = "https://xcjslzaahazdvsqjxrap.supabase.co"  # Your Supabase project URL
+key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjanNsemFhaGF6ZHZzcWp4cmFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTMzODE3MjUsImV4cCI6MjAyODk1NzcyNX0.alOSOmX0x8-1j2hqNfoi7WlBVBWvexIZiuX3Y5THg_4"  # Your Supabase anon/public key
+supabase: Client = create_client(url, key)
 
-# Parse the feed
-newsfeed = feedparser.parse(url)
+def fetch_and_store_urls():
+    feed_url = "https://www.theverge.com/rss/index.xml"
+    newsfeed = feedparser.parse(feed_url)
+    urls = [{'url': entry.get('link'), 'scraped': False} for entry in newsfeed.entries if entry.get('link')]
+    
+    # Insert URLs into Supabase, with 'scraped' set to False by default
+    data, error = supabase.table("rss_urls").insert(urls).execute()
 
-# List to store URLs
-urls = []
+    # Better handling for the benign 'error'
+    if error and error != ('count', None):
+        print(f"Failed to insert data: {error}")  # Log the error if it's not the benign ('count', None)
+    else:
+        print("Data inserted successfully", data)
 
-# Iterate over each entry in the feed
-for entry in newsfeed.entries:
-    article_link = entry.get('link')
-    if article_link:
-        urls.append(article_link)
-
-# Optionally, write URLs to a file
-with open('verge-urls.txt', 'w') as f:
-    for url in urls:
-        f.write(url + '\n')
+if __name__ == "__main__":
+    fetch_and_store_urls()
