@@ -1,9 +1,10 @@
+require("dotenv").config();
 const { createClient } = require("@supabase/supabase-js");
 const puppeteer = require("puppeteer");
 
 const supabase = createClient(
-  "https://xcjslzaahazdvsqjxrap.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjanNsemFhaGF6ZHZzcWp4cmFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTMzODE3MjUsImV4cCI6MjAyODk1NzcyNX0.alOSOmX0x8-1j2hqNfoi7WlBVBWvexIZiuX3Y5THg_4"
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
 );
 
 async function scrapeArticles() {

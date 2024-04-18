@@ -1,9 +1,14 @@
 import feedparser
 from supabase import create_client, Client
+from dotenv import load_dotenv
+import os
 
-# Supabase setup
-url = "https://xcjslzaahazdvsqjxrap.supabase.co"  # Your Supabase project URL
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjanNsemFhaGF6ZHZzcWp4cmFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTMzODE3MjUsImV4cCI6MjAyODk1NzcyNX0.alOSOmX0x8-1j2hqNfoi7WlBVBWvexIZiuX3Y5THg_4"  # Your Supabase anon/public key
+# Load environment variables from .env file
+load_dotenv()
+
+# Supabase setup using environment variables
+url = os.getenv('SUPABASE_URL')  # Use the environment variable
+key = os.getenv('SUPABASE_KEY')  # Use the environment variable
 supabase: Client = create_client(url, key)
 
 def fetch_and_store_urls():

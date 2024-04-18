@@ -1,15 +1,20 @@
 import os
 from supabase import create_client, Client
 import anthropic
+from dotenv import load_dotenv
 
-# Supabase setup
-url = "https://xcjslzaahazdvsqjxrap.supabase.co"  # Your Supabase project URL
-key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjanNsemFhaGF6ZHZzcWp4cmFwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTMzODE3MjUsImV4cCI6MjAyODk1NzcyNX0.alOSOmX0x8-1j2hqNfoi7WlBVBWvexIZiuX3Y5THg_4"  # Your Supabase anon/public key
-supabase: Client = create_client(url, key)
+# Load environment variables
+load_dotenv()
 
+# Supabase setup using environment variables
+supabase: Client = create_client(
+    os.getenv('SUPABASE_URL'), 
+    os.getenv('SUPABASE_KEY')
+)
+
+# Anthropics client setup using environment variable
 client = anthropic.Anthropic(
-    # defaults to os.environ.get("ANTHROPIC_API_KEY")
-    api_key="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",
+    api_key=os.getenv('ANTHROPIC_API_KEY')
 )
 
 def fetch_articles():
@@ -27,7 +32,6 @@ def summarize_article(article_id, content):
             temperature=0,
             messages=[{"role": "user", "content": content}]
     )
-
 
         # Assuming the response content is already a plain text or handling it as such
         summary_text = response.content.text if hasattr(response.content, 'text') else str(response.content)
