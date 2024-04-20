@@ -9,7 +9,7 @@ const supabase = createClient(
 
 async function scrapeArticles() {
   const { data: urls, error } = await supabase
-    .from("rss_urls")
+    .from("summarizer_flow")
     .select("id, url")
     .eq("scraped", false); // Fetch URLs that haven't been scraped yet
 
@@ -29,7 +29,7 @@ async function scrapeArticles() {
 
       // Update the table with the scraped content
       const { error: updateError } = await supabase
-        .from("rss_urls")
+        .from("summarizer_flow")
         .update({ content: content, scraped: true })
         .eq("id", id);
 

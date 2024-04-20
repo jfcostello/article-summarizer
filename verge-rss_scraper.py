@@ -16,14 +16,14 @@ def fetch_and_store_urls():
     newsfeed = feedparser.parse(feed_url)
     
     # Fetch existing URLs from the database
-    existing_urls_response = supabase.table("rss_urls").select("url").execute()
+    existing_urls_response = supabase.table("summarizer_flow").select("url").execute()
     existing_urls = {item['url'] for item in existing_urls_response.data} if existing_urls_response.data else set()
 
     # Filter out URLs that are already in the database
     new_urls = [{'url': entry.get('link'), 'scraped': False} for entry in newsfeed.entries if entry.get('link') and entry.get('link') not in existing_urls]
     
     if new_urls:
-        data, error = supabase.table("rss_urls").insert(new_urls).execute()
+        data, error = supabase.table("summarizer_flow").insert(new_urls).execute()
         if error and error != ('count', None):
             print(f"Failed to insert data: {error}")  # Log the error if it's not the benign ('count', None)
         else:

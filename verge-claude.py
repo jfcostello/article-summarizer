@@ -19,7 +19,7 @@ client = anthropic.Anthropic(
 
 def fetch_articles():
     """Fetch articles that have been scraped but not summarized."""
-    response = supabase.table("rss_urls").select("id, content").eq("scraped", True).eq("summarized", False).execute()
+    response = supabase.table("summarizer_flow").select("id, content").eq("scraped", True).eq("summarized", False).execute()
     articles = response.data if response.data else []
     return articles
 
@@ -37,7 +37,7 @@ def summarize_article(article_id, content):
         summary_text = response.content.text if hasattr(response.content, 'text') else str(response.content)
 
         # Update the database with the summary and set 'summarized' to True
-        update_data, update_error = supabase.table("rss_urls").update({"summary": summary_text, "summarized": True}).eq("id", article_id).execute()
+        update_data, update_error = supabase.table("summarizer_flow").update({"summary": summary_text, "summarized": True}).eq("id", article_id).execute()
         
         # Handle 'count' response which is not an actual error
         if update_error and update_error != ('count', None):
