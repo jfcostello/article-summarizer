@@ -13,7 +13,10 @@
                     </mxCell>
                 </UserObject>
                 <mxCell id="7" value="Cron Job (Coming soon)" style="shape=ext;double=1;rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-                    <mxGeometry x="-170" y="440" width="120" height="80" as="geometry"/>
+                    <mxGeometry x="-220" y="430" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" value="" style="edgeStyle=none;html=1;labelBackgroundColor=#66B2FF;labelBorderColor=#33FFFF;" edge="1" parent="1" source="10" target="11">
+                    <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="10" value="Using RSS feed URL, populates table with list of links" style="shape=ext;double=1;rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
                     <mxGeometry x="110" y="430" width="120" height="80" as="geometry"/>
@@ -87,6 +90,15 @@
                 </mxCell>
                 <mxCell id="31" value="LLM output" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="30">
                     <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" value="Run script - runs the following back to back" style="shape=ext;double=1;rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="-80" y="430" width="120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" value="" style="endArrow=classic;html=1;" edge="1" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="40" y="469.5" as="sourcePoint"/>
+                        <mxPoint x="110" y="469.5" as="targetPoint"/>
+                    </mxGeometry>
                 </mxCell>
             </root>
         </mxGraphModel>
