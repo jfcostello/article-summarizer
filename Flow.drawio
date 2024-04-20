@@ -48,9 +48,6 @@
                 <mxCell id="20" value="List of links" style="edgeLabel;resizable=0;html=1;align=center;verticalAlign=middle;" connectable="0" vertex="1" parent="19">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="21" value="Writes" style="edgeLabel;resizable=0;html=1;align=left;verticalAlign=bottom;" connectable="0" vertex="1" parent="19">
-                    <mxGeometry x="-1" relative="1" as="geometry"/>
-                </mxCell>
                 <mxCell id="22" value="" style="endArrow=classic;html=1;fillColor=#60a917;strokeColor=#2D7600;" edge="1" parent="1">
                     <mxGeometry relative="1" as="geometry">
                         <mxPoint x="320" y="250" as="sourcePoint"/>
