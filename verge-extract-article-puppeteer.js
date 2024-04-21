@@ -18,11 +18,15 @@ async function scrapeArticles() {
     return;
   }
 
-  const browser = await puppeteer.launch();
+  const browser = await puppeteer.launch({
+    headless: true, // Ensure Puppeteer runs in headless mode
+    args: ["--no-sandbox", "--disable-setuid-sandbox"], // Disable sandbox for compatibility with certain environments
+  });
+
   for (const { id, url } of urls) {
     try {
       const page = await browser.newPage();
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 }); // Increased timeout and changed waitUntil
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 }); // Increased timeout and waitUntil settings
       const content = await page.evaluate(
         () => document.body.innerText || "No content found"
       );
@@ -40,7 +44,6 @@ async function scrapeArticles() {
       await page.close();
     } catch (e) {
       console.error(`Error processing URL ${url}:`, e.message);
-      // Optionally handle the error more specifically, log to a service, or retry logic
     }
   }
   await browser.close();
