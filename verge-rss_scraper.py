@@ -1,3 +1,4 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
 import feedparser
 from supabase import create_client, Client
 from dotenv import load_dotenv
