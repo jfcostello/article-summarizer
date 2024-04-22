@@ -23,13 +23,13 @@ jobs:
           ssh-keyscan -H 139.177.197.79 >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      - name: Deploy to Server
-        run: |
-          ssh -o StrictHostKeyChecking=no gituser@139.177.197.79 'bash -s' << 'EOF'
-          if cd /srv/article_summarizer; then
-            git pull origin main
-          else
-            echo "Directory /srv/article_summarizer does not exist"
-            exit 1
-          fi
-          EOF
+- name: Verbose Deploy to Server
+  run: |
+    ssh -v -o StrictHostKeyChecking=no gituser@139.177.197.79 'bash -s' << 'EOF'
+    if cd /srv/article_summarizer; then
+      git pull origin main --verbose
+    else
+      echo "Directory /srv/article_summarizer does not exist"
+      exit 1
+    fi
+    EOF
