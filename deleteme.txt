@@ -1,1 +1,1 @@
-a very simple test of the git automation, let us see
+a very simple test of the git automation, let us see if this works
