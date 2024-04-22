@@ -15,13 +15,21 @@ jobs:
 
       - name: Setup SSH Key Manually
         env:
-          SSH_PRIVATE_KEY: ${{ secrets.SECOND }}
+          SSH_PRIVATE_KEY: ${{ secrets.UBUNTU_SERVER }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+          echo "${{ secrets.UBUNTU_SERVER }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan 139.177.197.79 >> ~/.ssh/known_hosts
+          ssh-keyscan -H 139.177.197.79 >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy to Server
         run: |
-          ssh -o StrictHostKeyChecking=no gituser@139.177.197.79 'cd /srv/article_summarizer && git pull origin main'
+          ssh -o StrictHostKeyChecking=no gituser@139.177.197.79 'bash -s' << 'EOF'
+          if cd /srv/article_summarizer; then
+            git pull origin main
+          else
+            echo "Directory /srv/article_summarizer does not exist"
+            exit 1
+          fi
+          EOF
