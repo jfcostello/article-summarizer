@@ -21,7 +21,6 @@ jobs:
           echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan 139.177.197.79 >> ~/.ssh/known_hosts
-          ssh -T gituser@139.177.197.79
 
       - name: Deploy to Server
         run: |
