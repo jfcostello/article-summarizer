@@ -23,7 +23,10 @@ def main():
     # Part 2: Run the Puppeteer script to scrape articles
     run_script(['node', 'extract_article_puppeteer.js'])
 
-    # Part 3: Run the Claude AI summarization script
+    # Part 3: Run the Groq summarization script
+    run_script('groq_llama_8b.py')
+
+    # Part 4: Run the Claude AI summarization script as a backup to clean up anything not done by Groq due to time out or other issues, if Groq ran without issue this will not do anything
     run_script('claude.py')
 
 if __name__ == "__main__":
