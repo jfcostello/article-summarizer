@@ -3,18 +3,18 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main # This triggers the action on pushes to the main branch
+      - main # Triggers on pushes to the main branch
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest # Specifies that the job runs on the latest Ubuntu runner provided by GitHub
+    runs-on: ubuntu-latest # Uses the latest Ubuntu runner provided by GitHub
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2 # This action checks out your repository under $GITHUB_WORKSPACE, so your workflow can access it
+        uses: actions/checkout@v3 # Updated version that supports Node.js 20
 
       - name: Setup SSH Key
-        uses: webfactory/ssh-agent@v0.5.3
+        uses: webfactory/ssh-agent@v0.5.4 # Updated version, check if this exists or the latest available
         with:
           ssh-private-key: ${{ secrets.UBUNTU_SERVER }}
 
