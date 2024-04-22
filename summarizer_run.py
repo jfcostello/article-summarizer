@@ -18,13 +18,13 @@ def run_script(command):
 
 def main():
     # Part 1: Run the RSS scraper script
-    run_script('verge-rss_scraper.py')
+    run_script('rss_scraper.py')
 
     # Part 2: Run the Puppeteer script to scrape articles
-    run_script(['node', 'verge-extract-article-puppeteer.js'])
+    run_script(['node', 'extract_article_puppeteer.js'])
 
     # Part 3: Run the Claude AI summarization script
-    run_script('verge-claude.py')
+    run_script('claude.py')
 
 if __name__ == "__main__":
     main()
