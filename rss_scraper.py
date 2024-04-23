@@ -1,5 +1,4 @@
 #!/root/.ssh/article-summarizer/as-env/bin/python3
-
 import feedparser
 from supabase import create_client, Client
 from dotenv import load_dotenv
@@ -17,9 +16,8 @@ def fetch_and_store_urls():
     # Fetch enabled RSS feed URLs from the rss_feed_list table
     rss_feeds_response = supabase.table("rss_feed_list").select("rss_feed").eq("isEnabled", 'TRUE').execute()
 
-    # Check for errors in the response
     if not rss_feeds_response.data:
-        print(f"Error fetching RSS feed URLs or no data found.")
+        print("Error fetching RSS feed URLs or no data found.")
         return
 
     rss_feeds_data = rss_feeds_response.data
@@ -36,17 +34,25 @@ def fetch_and_store_urls():
 
         existing_urls = {item['url'] for item in existing_urls_response.data}
 
-        new_urls = [{'url': entry.get('link'), 'scraped': False} for entry in newsfeed.entries if entry.get('link') and entry.get('link') not in existing_urls]
+        # Include ArticleTitle capture logic
+        new_entries = []
+        for entry in newsfeed.entries:
+            if entry.get('link') and entry.get('link') not in existing_urls:
+                new_entry = {
+                    'url': entry.get('link'),
+                    'ArticleTitle': entry.get('title', 'No Title Provided'),  # Default title if none found
+                    'scraped': False
+                }
+                new_entries.append(new_entry)
 
-        if new_urls:
-            insert_response = supabase.table("summarizer_flow").insert(new_urls).execute()
+        if new_entries:
+            insert_response = supabase.table("summarizer_flow").insert(new_entries).execute()
             if insert_response.data is None:
                 print(f"Failed to insert data for {feed_url}.")
             else:
-                print(f"Data inserted successfully for {feed_url}")
+                print(f"Data inserted successfully for {feed_url}: {len(new_entries)} new entries.")
         else:
             print(f"No new URLs to add for {feed_url}")
 
 if __name__ == "__main__":
     fetch_and_store_urls()
-
