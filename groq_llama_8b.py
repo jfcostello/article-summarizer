@@ -1,5 +1,7 @@
 #!/root/.ssh/article-summarizer/as-env/bin/python3
 import os
+import json
+from datetime import datetime, timezone
 from supabase import create_client, Client
 from groq import Groq
 from dotenv import load_dotenv
@@ -17,6 +19,29 @@ supabase: Client = create_client(
 client = Groq(
     api_key=os.environ.get("GROQ_API_KEY"),
 )
+
+# Define script_name globally
+script_name = "groq_llama_8b.py"
+
+def log_status(script_name, log_entries, status):
+    """Logs script execution status and messages."""
+    supabase.table("log_script_status").insert({
+        "script_name": script_name,
+        "log_entry": json.dumps(log_entries),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "status": status
+    }).execute()
+
+
+def log_duration(script_name, start_time, end_time):
+    """Logs script execution duration."""
+    duration_seconds = (end_time - start_time).total_seconds()
+    supabase.table("log_script_duration").insert({
+        "script_name": script_name,
+        "start_time": start_time.isoformat(),
+        "end_time": end_time.isoformat(),
+        "duration_seconds": duration_seconds
+    }).execute()
 
 def fetch_articles():
     """Fetch articles that have been scraped but not summarized."""
@@ -38,7 +63,7 @@ def extract_section(content, start_key, end_key=None):
         end_idx = len(content)  # No end_key provided, take until end
     return content[start_idx:end_idx].strip()
 
-def summarize_article(article_id, content):
+def summarize_article(article_id, content, status_entries):
     try:
         chat_completion = client.chat.completions.create(
             model="llama3-8b-8192",
@@ -53,7 +78,6 @@ def summarize_article(article_id, content):
         # Extract the structured text from the response
         response_content = chat_completion.choices[0].message.content
         ## print("Debug - Response Content:", response_content)  # Debugging output
-
         intro_paragraph = extract_section(response_content, "IntroParagraph:", "BulletPointSummary:")
         bullet_point_summary = extract_section(response_content, "BulletPointSummary:", "ConcludingParagraph:")
         concluding_paragraph = extract_section(response_content, "ConcludingParagraph:")
@@ -62,25 +86,35 @@ def summarize_article(article_id, content):
             "IntroParagraph": intro_paragraph,
             "BulletPointSummary": bullet_point_summary,
             "ConcludingParagraph": concluding_paragraph,
-            "summarized": True  # Set summarized to True once the article has been successfully summarized
+            "summarized": True
         }
 
         update_response, update_error = supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
 
         if update_error and update_error != ('count', None):
             print(f"Failed to update summary for ID {article_id}: {update_error}")
+            status_entries.append({"message": f"Failed to update summary for ID {article_id}", "error": str(update_error)})
         else:
             print(f"Summary updated successfully for ID {article_id}")
+            status_entries.append({"message": f"Summary updated successfully for ID {article_id}"})
     except Exception as e:
         print(f"Error during the summarization process for ID {article_id}: {str(e)}")
+        status_entries.append({"message": f"Error during summarization for ID {article_id}", "error": str(e)})
 
 def main():
+    start_time = datetime.now(timezone.utc)
     articles = fetch_articles()
+    status_entries = []
     if articles:
         for article in articles:
-            summarize_article(article['id'], article['content'])
+            summarize_article(article['id'], article['content'], status_entries)
     else:
         print("No articles to summarize.")
+        status_entries.append({"message": "No articles to summarize"})
+
+    end_time = datetime.now(timezone.utc)
+    log_duration(script_name, start_time, end_time)
+    log_status(script_name, status_entries, "Complete")
 
 if __name__ == "__main__":
     main()

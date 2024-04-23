@@ -1,5 +1,7 @@
 #!/root/.ssh/article-summarizer/as-env/bin/python3
 import os
+import json
+from datetime import datetime, timezone
 from supabase import create_client, Client
 import anthropic
 from dotenv import load_dotenv
@@ -17,6 +19,40 @@ supabase: Client = create_client(
 client = anthropic.Anthropic(
     api_key=os.getenv('ANTHROPIC_API_KEY')
 )
+
+# Global script name for consistent logging
+script_name = "claude.py"
+
+def log_status(script_name, log_entries, status):
+    """Logs script execution status and messages."""
+    try:
+        response = supabase.table("log_script_status").insert({
+            "script_name": script_name,
+            "log_entry": json.dumps(log_entries),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "status": status
+        }).execute()
+        # Check if 'error' is an attribute of the response and print if it is present
+        if hasattr(response, 'error') and response.error:
+            print("Failed to log status:", response.error.message)
+    except Exception as e:
+        print("Exception when logging status:", str(e))
+
+def log_duration(script_name, start_time, end_time):
+    """Logs script execution duration."""
+    duration_seconds = (end_time - start_time).total_seconds()
+    try:
+        response = supabase.table("log_script_duration").insert({
+            "script_name": script_name,
+            "start_time": start_time.isoformat(),
+            "end_time": end_time.isoformat(),
+            "duration_seconds": duration_seconds
+        }).execute()
+        # Check if 'error' is an attribute of the response and print if it is present
+        if hasattr(response, 'error') and response.error:
+            print("Failed to log duration:", response.error.message)
+    except Exception as e:
+        print("Exception when logging duration:", str(e))
 
 def fetch_articles():
     """Fetch articles that have been scraped but not summarized."""
@@ -39,7 +75,7 @@ def extract_section(content, start_key, end_key=None):
     return content[start_idx:end_idx].strip()
 
 
-def summarize_article(article_id, content):
+def summarize_article(article_id, content, status_entries):
     try:
         response = client.messages.create(
             model="claude-3-haiku-20240307",
@@ -71,18 +107,29 @@ def summarize_article(article_id, content):
         update_response, update_error = supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
         if update_error and update_error != ('count', None):
             print(f"Failed to update summary for ID {article_id}: {update_error}")
+            status_entries.append({"message": f"Failed to update summary for ID {article_id}", "error": str(update_error)})
         else:
-            print("Summary updated successfully for ID", article_id)
+            print(f"Summary updated successfully for ID {article_id}")
+            status_entries.append({"message": f"Summary updated successfully for ID {article_id}"})
+
     except Exception as e:
         print(f"Error during the summarization process for ID {article_id}: {str(e)}")
+        status_entries.append({"message": f"Error during summarization for ID {article_id}", "error": str(e)})
 
 def main():
+    start_time = datetime.now(timezone.utc)  # Start time of the script
     articles = fetch_articles()
+    status_entries = []
     if articles:
         for article in articles:
-            summarize_article(article['id'], article['content'])
+            summarize_article(article['id'], article['content'], status_entries)
     else:
         print("No articles to summarize.")
+        status_entries.append({"message": "No articles to summarize"})
+
+    end_time = datetime.now(timezone.utc)  # End time of the script
+    log_duration(script_name, start_time, end_time)  # Log total duration once
+    log_status(script_name, status_entries, "Complete")
 
 if __name__ == "__main__":
     main()
