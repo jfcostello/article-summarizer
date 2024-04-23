@@ -1,7 +1,9 @@
 #!/root/.ssh/article-summarizer/as-env/bin/python3
 import os
 from supabase import create_client, Client
+import json
 import anthropic
+import re
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -29,22 +31,39 @@ def summarize_article(article_id, content):
         response = client.messages.create(
             model="claude-3-haiku-20240307",
             max_tokens=4000,
-            system = ('You are an article summarizer. A headless browser will scrape the contents of an article, and your role is to turn it into a succinct bullet point based summary which will be delivered in json. Your response should only be in JSON, as it will be ingested into a database directly. When creating the summary, make sure you focus only on the article itself. You will get the full page, but ignore any additional articles, comments etc. The article will be the bulk of the return, usually starting with a title and ending with comments, a heading promoting additional articles, a complete change in tone things of that nature - you should only focus on the article, so look out for signs the article ended, like a conclusion or a sudden change into comments, other articles, footers etc. Focus on only summarizing, do not add additional information or context - if it\'s not in the article, don\'t include it. Your summary should 1) Start with the title 2) Have a very brief intro explaining what the article is about 3) Have 2-6 bullet points explaining what is covered in the article. For smaller articles, use less bullet points, only use more if there truly are lots of things to discuss. If a person is quoted, and the quote is relevant, include the full quote in the return and attribute it to who it is attributed to in the article. 4) Close with A very brief outro summarizing the article. This will be returned in JSON as follows: {"ArticleTitle":"TITLE OF ARTICLE GOES HERE", "IntroParagraph":"BRIEF INTRO THAT EXPLAINS WHAT THE ARTICLE IS ABOUT GOES HERE", "BulletPointSummary":["BULLET POINT GOES HERE", "ADDITIONAL BULLET POINT GOES HERE", "CONTINUE WITH BULLET POINTS AS NECESSARY, ENDING WITH 2-6 DEPENDING ON HOW MANY DISTINCT TOPICS ARE DISCUSSED IN THE ARTICLE"], "ConcludingParagraph":"BRIEF CONCLUDING PARAGRAPH GOES HERE"}'),
+            system = ('You are an article summarizer. A headless browser will scrape the contents of an article, and your role is to turn it into a succinct bullet point based summary which will be delivered in json. Your response should only be in JSON, as it will be ingested into a database directly. When creating the summary, make sure you focus only on the article itself. You will get the full page, but ignore any additional articles, comments etc. The article will be the bulk of the return, usually starting with a title and ending with comments, a heading promoting additional articles, a complete change in tone things of that nature - you should only focus on the article, so look out for signs the article ended, like a conclusion or a sudden change into comments, other articles, footers etc. Focus on only summarizing, do not add additional information or context - if it\'s not in the article, don\'t include it. Your summary should 1) Start with the title 2) Have a very brief intro explaining what the article is about 3) Have 2-6 bullet points explaining what is covered in the article. For smaller articles, use less bullet points, only use more if there truly are lots of things to discuss. If a person is quoted, and the quote is relevant, include the full quote in the return and attribute it to who it is attributed to in the article. 4) Close with A very brief outro summarizing the article. This will be returned in JSON as follows: {"ArticleTitle":"TITLE OF ARTICLE GOES HERE", "IntroParagraph":"BRIEF INTRO THAT EXPLAINS WHAT THE ARTICLE IS ABOUT GOES HERE", "BulletPointSummary":["BULLET POINT GOES HERE", "ADDITIONAL BULLET POINT GOES HERE", "CONTINUE WITH BULLET POINTS AS NECESSARY, ENDING WITH 2-6 DEPENDING ON HOW MANY DISTINCT TOPICS ARE DISCUSSED IN THE ARTICLE"], "ConcludingParagraph":"BRIEF CONCLUDING PARAGRAPH GOES HERE"}  - always make sure to end your bullet point summary with a ], closing out the ['),
             temperature=0,
             messages=[{"role": "user", "content": content}]
     )
 
-        # Assuming the response content is already a plain text or handling it as such
-        summary_text = response.content.text if hasattr(response.content, 'text') else str(response.content)
+        # Assuming response.content returns a list of objects, and the required text is in the first object's 'text' attribute
+        json_text = response.content[0].text
+        # Regex to extract JSON string
+        match = re.search(r'\{\n.*\}', json_text, re.DOTALL)
+        if match:
+            json_data = match.group(0)
+            summary_data = json.loads(json_data)
+        else:
+            raise ValueError("No JSON data found in the response text.")
 
-        # Update the database with the summary and set 'summarized' to True
-        update_data, update_error = supabase.table("summarizer_flow").update({"summary": summary_text, "summarized": True}).eq("id", article_id).execute()
-        
-        # Handle 'count' response which is not an actual error
+        # Prepare data for database update
+        update_data = {
+            "ArticleTitle": summary_data["ArticleTitle"],
+            "IntroParagraph": summary_data["IntroParagraph"],
+            "BulletPointSummary": json.dumps(summary_data["BulletPointSummary"]),
+            "ConcludingParagraph": summary_data["ConcludingParagraph"],
+            "summarized": True
+        }
+
+        # Update the database
+        update_response, update_error = supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
+
         if update_error and update_error != ('count', None):
             print(f"Failed to update summary for ID {article_id}: {update_error}")
         else:
             print(f"Summary updated successfully for ID {article_id}")
+    except json.JSONDecodeError as e:
+        print(f"JSON Parsing Error in ID {article_id}: {e}")
     except Exception as e:
         print(f"Error during the summarization process for ID {article_id}: {str(e)}")
 

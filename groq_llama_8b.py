@@ -1,5 +1,6 @@
 #!/root/.ssh/article-summarizer/as-env/bin/python3
 import os
+import json 
 from supabase import create_client, Client
 from groq import Groq
 from dotenv import load_dotenv
@@ -32,15 +33,28 @@ def summarize_article(article_id, content):
             temperature=0,
             messages=[
                 {"role": "user", "content": content},
-                {"role": "system", "content": 'You are an article summarizer. A headless browser will scrape the contents of an article, and your role is to turn it into a succinct bullet point based summary which will be delivered in json. Your response should only be in JSON, as it will be ingested into a database directly. When creating the summary, make sure you focus only on the article itself. You will get the full page, but ignore any additional articles, comments etc. The article will be the bulk of the return, usually starting with a title and ending with comments, a heading promoting additional articles, a complete change in tone things of that nature - you should only focus on the article, so look out for signs the article ended, like a conclusion or a sudden change into comments, other articles, footers etc. Focus on only summarizing, do not add additional information or context - if it\'s not in the article, don\'t include it. Your summary should 1) Start with the title 2) Have a very brief intro explaining what the article is about 3) Have 2-6 bullet points explaining what is covered in the article. For smaller articles, use less bullet points, only use more if there truly are lots of things to discuss. If a person is quoted, and the quote is relevant, include the full quote in the return and attribute it to who it is attributed to in the article. 4) Close with A very brief outro summarizing the article. This will be returned in JSON as follows: {"ArticleTitle":"TITLE OF ARTICLE GOES HERE", "IntroParagraph":"BRIEF INTRO THAT EXPLAINS WHAT THE ARTICLE IS ABOUT GOES HERE", "BulletPointSummary":["BULLET POINT GOES HERE", "ADDITIONAL BULLET POINT GOES HERE", "CONTINUE WITH BULLET POINTS AS NECESSARY, ENDING WITH 2-6 DEPENDING ON HOW MANY DISTINCT TOPICS ARE DISCUSSED IN THE ARTICLE"], "ConcludingParagraph":"BRIEF CONCLUDING PARAGRAPH GOES HERE"}'}
+                {"role": "system", "content": 'You are an article summarizer. A headless browser will scrape the contents of an article, and your role is to turn it into a succinct bullet point based summary which will be delivered in json. Your response should only be in JSON, as it will be ingested into a database directly. When creating the summary, make sure you focus only on the article itself. You will get the full page, but ignore any additional articles, comments etc. The article will be the bulk of the return, usually starting with a title and ending with comments, a heading promoting additional articles, a complete change in tone things of that nature - you should only focus on the article, so look out for signs the article ended, like a conclusion or a sudden change into comments, other articles, footers etc. Focus on only summarizing, do not add additional information or context - if it\'s not in the article, don\'t include it. Your summary should 1) Start with the title 2) Have a very brief intro explaining what the article is about 3) Have 2-6 bullet points explaining what is covered in the article. For smaller articles, use less bullet points, only use more if there truly are lots of things to discuss. If a person is quoted, and the quote is relevant, include the full quote in the return and attribute it to who it is attributed to in the article. 4) Close with A very brief outro summarizing the article. This will be returned in JSON as follows: {"ArticleTitle":"TITLE OF ARTICLE GOES HERE", "IntroParagraph":"BRIEF INTRO THAT EXPLAINS WHAT THE ARTICLE IS ABOUT GOES HERE", "BulletPointSummary":["BULLET POINT GOES HERE", "ADDITIONAL BULLET POINT GOES HERE", "CONTINUE WITH BULLET POINTS AS NECESSARY, ENDING WITH 2-6 DEPENDING ON HOW MANY DISTINCT TOPICS ARE DISCUSSED IN THE ARTICLE"], "ConcludingParagraph":"BRIEF CONCLUDING PARAGRAPH GOES HERE"} - always make sure to end your bullet point summary with a ], closing out the ['}
             ]
         )
 
-        # Accessing the correct summary text from the chat completion response
-        summary_text = chat_completion.choices[0].message.content  # Corrected line to access text
+ # Extract the JSON content from the response
+        response_content = chat_completion.choices[0].message.content
+        try:
+            summary_data = json.loads(response_content)
+        except json.JSONDecodeError as e:
+            print("JSON Decode Error:", e)
+            json_start_pos = response_content.find('{')
+            summary_data = json.loads(response_content[json_start_pos:])
 
-        # Update the database with the summary and set 'summarized' to True
-        update_data, update_error = supabase.table("summarizer_flow").update({"summary": summary_text, "summarized": True}).eq("id", article_id).execute()
+        update_data = {
+            "ArticleTitle": summary_data.get("ArticleTitle", ""),
+            "IntroParagraph": summary_data.get("IntroParagraph", ""),
+            "BulletPointSummary": summary_data.get("BulletPointSummary", []),  # Default to empty list if not found
+            "ConcludingParagraph": summary_data.get("ConcludingParagraph", ""),
+            "summarized": True  # Set summarized to True once the article has been successfully summarized
+        }
+
+        update_response, update_error = supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
 
         if update_error and update_error != ('count', None):
             print(f"Failed to update summary for ID {article_id}: {update_error}")
@@ -48,7 +62,6 @@ def summarize_article(article_id, content):
             print(f"Summary updated successfully for ID {article_id}")
     except Exception as e:
         print(f"Error during the summarization process for ID {article_id}: {str(e)}")
-
 
 def main():
     articles = fetch_articles()
