@@ -52,14 +52,16 @@ def run_script(command):
 def main():
     start_time = datetime.now(timezone.utc)
     all_log_entries = []
+    overall_status = "Success"
 
-    # Run the scripts one by one, capturing logs
+    # Run the scripts one by one, capturing logs and continuing even if one fails
     for script in ['rss_scraper.py', ['node', 'extract_article_puppeteer.js'],
-                   'groq_llama_8b.py', 'claude.py']:
+                   'groq_llama_8b.py', 'claude.py', 'groq_llama_8b_tagger.py']:
         status, log_entries = run_script(script)
         all_log_entries.extend(log_entries)
         if status == "Error":
-            break  # Stop execution if any script fails
+            overall_status = "Error"
+
 
     # Log the results and duration
     end_time = datetime.now(timezone.utc)

@@ -26,7 +26,7 @@ script_name = "groq_llama_8b.py"
 
 # Load YAML configuration for system prompt
 def load_config():
-    with open('config.yaml', 'r') as file:
+    with open('config.yaml', 'r', encoding='utf-8') as file:
         config = yaml.safe_load(file)
     return config['systemPrompt']
 
