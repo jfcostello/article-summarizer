@@ -62,8 +62,11 @@ def log_duration(script_name, start_time, end_time):
         print("Exception when logging duration:", str(e))
 
 def fetch_articles():
-    """Fetch articles that have been scraped but not summarized."""
-    response = supabase.table("summarizer_flow").select("id, content").eq("scraped", True).eq("summarized", False).execute()
+    """Fetch articles that have been scraped but not fully summarized or have empty sections."""
+    query = supabase.table("summarizer_flow").select("id, content")\
+        .eq("scraped", True)\
+        .or_("summarized.eq.false,IntroParagraph.is.null,IntroParagraph.eq.,BulletPointSummary.is.null,BulletPointSummary.eq.,ConcludingParagraph.is.null,ConcludingParagraph.eq.")
+    response = query.execute()
     articles = response.data if response.data else []
     return articles
 
