@@ -106,13 +106,14 @@ def summarize_article(article_id, content, status_entries, systemPrompt):
 
         concluding_paragraph = extract_section(response_content, "ConcludingParagraph:")
 
+        # Prepare data for update, always mark as summarized, but only update bulletpointsummary if json is valid
         update_data = {
             "IntroParagraph": intro_paragraph,
             "ConcludingParagraph": concluding_paragraph,
-            "summarized": valid_json
+            "summarized": True  # Always mark as summarized
         }
         if valid_json:
-             update_data["BulletPointSummary"] = bullet_point_summary
+            update_data["BulletPointSummary"] = bullet_point_summary
 
         update_response, update_error = supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
 
