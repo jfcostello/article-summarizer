@@ -94,14 +94,25 @@ def summarize_article(article_id, content, status_entries, systemPrompt):
         intro_paragraph = extract_section(response_content, "IntroParagraph:", "BulletPointSummary:")
         bullet_point_summary = extract_section(response_content, "BulletPointSummary:", "ConcludingParagraph:")
         bullet_point_summary = custom_escape_quotes(bullet_point_summary)
+
+        # Validate BulletPointSummary JSON, if it isn't valid KSON, it won't add it
+        try:
+            json.loads(bullet_point_summary)  # Try to parse the JSON to see if it's valid
+            valid_json = True
+        except json.JSONDecodeError:
+            valid_json = False
+            bullet_point_summary = None  # Invalidate the summary to avoid db insertion
+            status_entries.append({"message": f"Invalid JSON detected for BulletPointSummary in article ID {article_id}"})
+
         concluding_paragraph = extract_section(response_content, "ConcludingParagraph:")
 
         update_data = {
             "IntroParagraph": intro_paragraph,
-            "BulletPointSummary": bullet_point_summary,
             "ConcludingParagraph": concluding_paragraph,
-            "summarized": True
+            "summarized": valid_json
         }
+        if valid_json:
+             update_data["BulletPointSummary"] = bullet_point_summary
 
         update_response, update_error = supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
 
