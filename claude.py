@@ -2,6 +2,7 @@
 import os
 import json
 import yaml
+import re
 from datetime import datetime, timezone
 from supabase import create_client, Client
 import anthropic
@@ -29,6 +30,11 @@ def load_config():
     with open('config.yaml', 'r', encoding='utf-8') as file:
         config = yaml.safe_load(file)
     return config['systemPrompt']
+
+def custom_escape_quotes(json_str):
+    # Correctly escape quotes inside JSON string values, avoiding double escaping
+    json_str = re.sub(r'(?<=: )"(.+?)"(?=,|\s*\})', lambda m: '"' + m.group(1).replace('"', '\\"') + '"', json_str)
+    return json_str
 
 def log_status(script_name, log_entries, status):
     """Logs script execution status and messages."""
@@ -101,6 +107,7 @@ def summarize_article(article_id, content, status_entries, systemPrompt):
                 ## print("Debug - Structured Text:", structured_text)  # Debugging output to log the received text
                 intro_paragraph = extract_section(structured_text, "IntroParagraph:", "BulletPointSummary:")
                 bullet_point_summary = extract_section(structured_text, "BulletPointSummary:", "ConcludingParagraph:")
+                bullet_point_summary = custom_escape_quotes(bullet_point_summary)
                 concluding_paragraph = extract_section(structured_text, "ConcludingParagraph:")
             else:
                 raise ValueError("Text attribute not found in response")
