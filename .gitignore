@@ -1,3 +1,4 @@
 .env
 legacy
 wordpress
+.DS_Store

@@ -83,22 +83,34 @@ def generate_tags(article_id, content, systemPrompt):
         response_content = chat_completion.choices[0].message.content
         response_json = json.loads(response_content)
 
-        # Insert tags and scores into the article_tags table
+        # Track statuses for each tag insertion
+        status_entries = []
+        successful_insertions = []
+
         for tag_data in response_json["tags"]:
             tag = tag_data["tag"]
             score = int(tag_data["score"])  # Convert the score to an integer
-            supabase.table("article_tags").insert({
-                "article_id": article_id,
-                "tag": tag,
-                "score": score
-            }).execute()
+            try:
+                supabase.table("article_tags").insert({
+                    "article_id": article_id,
+                    "tag": tag,
+                    "score": score
+                }).execute()
+                successful_insertions.append({"tag": tag, "status": "success"})
+            except Exception as insert_error:
+                status_entries.append({"tag": tag, "status": "failed", "error": str(insert_error)})
+                raise Exception(f"Failed to insert tag {tag} for article {article_id}: {insert_error}")
 
-        # Update ProductionReady status in summarizer_flow table
-        supabase.table("summarizer_flow").update({"ProductionReady": True}).eq("id", article_id).execute()
+        # Only update ProductionReady status if all tags were successfully inserted
+        if all(entry["status"] == "success" for entry in successful_insertions):
+            supabase.table("summarizer_flow").update({"ProductionReady": True}).eq("id", article_id).execute()
 
         return {"message": f"Tags generated and updated successfully for ID {article_id}"}
+
     except Exception as e:
         return {"message": f"Error during tag generation for ID {article_id}", "error": str(e)}
+
+
 
 def main():
     start_time = datetime.now(timezone.utc)
@@ -108,6 +120,7 @@ def main():
     tags = fetch_tags()
     listoftags = ', '.join(tags)
     system_prompt = f"{systemPrompt_Tagger_1} {listoftags} {systemPrompt_Tagger_2} {listoftags}"
+    
     if articles:
         for article in articles:
             article_id = article["id"]
@@ -123,4 +136,4 @@ def main():
     log_status(script_name, status_entries, "Complete")
 
 if __name__ == "__main__":
-    main() 
+    main()
