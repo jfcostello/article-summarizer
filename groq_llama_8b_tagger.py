@@ -31,9 +31,9 @@ def load_config():
     return config['systemPrompt-Tagger-1'], config['systemPrompt-Tagger-2']
 
 def fetch_tags():
-    """Fetch enabled tags from the all_tags table."""
-    response = supabase.table("all_tags").select("tag").eq("isEnabled", True).execute()
-    tags = [row['tag'] for row in response.data] if response.data else []
+    """Fetch enabled tags with descriptions from the all_tags table."""
+    response = supabase.table("all_tags").select("tag, public_desc, private_desc").eq("isEnabled", True).execute()
+    tags = response.data if response.data else []
     return tags
 
 def log_status(script_name, log_entries, status):
@@ -118,9 +118,14 @@ def main():
     status_entries = []
     systemPrompt_Tagger_1, systemPrompt_Tagger_2 = load_config()
     tags = fetch_tags()
-    listoftags = ', '.join(tags)
-    system_prompt = f"{systemPrompt_Tagger_1} {listoftags} {systemPrompt_Tagger_2} {listoftags}"
-    
+
+    # Construct the listoftagsanddesc string
+    listoftagsanddesc = '\n'.join([f"{tag['tag']} (Public: {tag['public_desc']}, Private: {tag['private_desc']})" for tag in tags])
+    listoftags = ', '.join([tag['tag'] for tag in tags])  # Only the tags
+
+    # Construct the system prompt with the descriptions and just the tags
+    system_prompt = f"{systemPrompt_Tagger_1} {listoftagsanddesc} {systemPrompt_Tagger_2} {listoftags}"
+
     if articles:
         for article in articles:
             article_id = article["id"]
