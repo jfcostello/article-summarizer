@@ -68,13 +68,20 @@ def fetch_and_store_urls():
                 new_entries.append(new_entry)
 
         if new_entries:
-            insert_response = supabase.table("summarizer_flow").insert(new_entries).execute()
-            if insert_response.data is None:
-                log_entries.append(f"Failed to insert data for {feed_url}.")
-            else:
-                log_entries.append(f"Data inserted successfully for {feed_url}: {len(new_entries)} new entries.")
+            for entry in new_entries:
+                try:
+                    insert_response = supabase.table("summarizer_flow").insert(entry).execute()
+                    if insert_response.data is None:
+                       log_entries.append(f"Failed to insert data for {entry['url']}.")
+                    else:
+                        log_entries.append(f"Data inserted successfully for {entry['url']}.")
+                except Exception as e:
+                    if "duplicate key value violates unique constraint" in str(e):
+                         log_entries.append(f"Duplicate URL found: {entry['url']}. Skipping insertion.")
+                    else:
+                        log_entries.append(f"Error inserting data for {entry['url']}: {str(e)}")
         else:
-            log_entries.append(f"No new URLs to add for {feed_url}.")
+             log_entries.append(f"No new URLs to add for {feed_url}.")
 
     # Log the completion of the script
     log_status("rss_scraper.py", {"messages": log_entries}, "Success")
