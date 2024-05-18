@@ -1,4 +1,5 @@
 #!/root/.ssh/article-summarizer/as-env/bin/python3
+#This script tags summarized articles using Groq's API and stores the results in a Supabase database. It fetches articles needing tags, generates tags using a system prompt from a YAML configuration file, and logs the process and duration in Supabase.
 import os
 import json
 import yaml
@@ -10,13 +11,13 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Supabase setup using environment variables
+# Initialize Supabase client using environment variables for URL and key
 supabase: Client = create_client(
     os.getenv('SUPABASE_URL'),
     os.getenv('SUPABASE_KEY')
 )
 
-# Groqs client setup using environment variable
+# Initialize Groq client using environment variable for API key
 client = Groq(
     api_key=os.environ.get("GROQ_API_KEY"),
 )
@@ -24,18 +25,20 @@ client = Groq(
 # Define script_name globally
 script_name = "groq_llama_8b_tagger.py"
 
-# Load YAML configuration for system prompt
+# Load the system prompt configuration from config.yaml
 def load_config():
     with open('config.yaml', 'r', encoding='utf-8') as file:
         config = yaml.safe_load(file)
     return config['systemPrompt-Tagger-1'], config['systemPrompt-Tagger-2']
 
+# Fetch enabled tags and their descriptions from the all_tags table in Supabase
 def fetch_tags():
     """Fetch enabled tags with descriptions from the all_tags table."""
     response = supabase.table("all_tags").select("tag, public_desc, private_desc").eq("isEnabled", True).execute()
     tags = response.data if response.data else []
     return tags
 
+# Log the script's execution status and messages to the log_script_status table in Supabase
 def log_status(script_name, log_entries, status):
     """Logs script execution status and messages."""
     supabase.table("log_script_status").insert({
@@ -45,6 +48,7 @@ def log_status(script_name, log_entries, status):
         "status": status
     }).execute()
 
+# Log the script's execution duration to the log_script_duration table in Supabase
 def log_duration(script_name, start_time, end_time):
     """Logs script execution duration."""
     duration_seconds = (end_time - start_time).total_seconds()
@@ -55,6 +59,7 @@ def log_duration(script_name, start_time, end_time):
         "duration_seconds": duration_seconds
     }).execute()
 
+# Fetch articles that are summarized but not marked as production-ready from the summarizer_flow table
 def fetch_articles():
     """Fetch articles that are summarized but not production-ready."""
     response = (
@@ -67,6 +72,7 @@ def fetch_articles():
     articles = response.data if response.data else []
     return articles
 
+# Generate tags for an article using Groq's API and insert them into the article_tags table in Supabase
 def generate_tags(article_id, content, systemPrompt):
     try:
         chat_completion = client.chat.completions.create(
@@ -110,6 +116,7 @@ def generate_tags(article_id, content, systemPrompt):
     except Exception as e:
         return {"message": f"Error during tag generation for ID {article_id}", "error": str(e)}
 
+# Main function to fetch articles, generate tags, and log the process
 def main():
     start_time = datetime.now(timezone.utc)
     articles = fetch_articles()

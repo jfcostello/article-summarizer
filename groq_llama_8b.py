@@ -1,4 +1,5 @@
 #!/root/.ssh/article-summarizer/as-env/bin/python3
+# This Python script connects to a Supabase database to fetch articles that have been scraped but not yet summarized. It uses the Groq API to generate summaries, which are then updated back into the database. The script logs both the status and duration of the summarization process.
 import os
 import json
 import yaml
@@ -25,17 +26,19 @@ client = Groq(
 # Define script_name globally
 script_name = "groq_llama_8b.py"
 
-# Load YAML configuration for system prompt
+# Loads the system prompt configuration from config.yaml
 def load_config():
     with open('config.yaml', 'r', encoding='utf-8') as file:
         config = yaml.safe_load(file)
     return config['systemPrompt']
 
+# Custom function to escape quotes correctly within JSON strings
 def custom_escape_quotes(json_str):
     # Correctly escape quotes inside JSON string values, avoiding double escaping
     json_str = re.sub(r'(?<=: )"(.+?)"(?=,|\s*\})', lambda m: '"' + m.group(1).replace('"', '\\"') + '"', json_str)
     return json_str
 
+# Logs the status of the script to the 'log_script_status' table in Supabase
 def log_status(script_name, log_entries, status):
     """Logs script execution status and messages."""
     supabase.table("log_script_status").insert({
@@ -45,7 +48,7 @@ def log_status(script_name, log_entries, status):
         "status": status
     }).execute()
 
-
+# Logs the duration of the script execution to the 'log_script_duration' table in Supabase
 def log_duration(script_name, start_time, end_time):
     """Logs script execution duration."""
     duration_seconds = (end_time - start_time).total_seconds()
@@ -56,12 +59,14 @@ def log_duration(script_name, start_time, end_time):
         "duration_seconds": duration_seconds
     }).execute()
 
+# Fetches articles that have been scraped but not yet summarized from the 'summarizer_flow' table
 def fetch_articles():
     """Fetch articles that have been scraped but not summarized."""
     response = supabase.table("summarizer_flow").select("id, content").eq("scraped", True).eq("summarized", False).execute()
     articles = response.data if response.data else []
     return articles
 
+# Extracts a section of text between a start key and an optional end key from the content
 def extract_section(content, start_key, end_key=None):
     """Extract text between start_key and optional end_key from content."""
     start_idx = content.find(start_key)
@@ -76,6 +81,7 @@ def extract_section(content, start_key, end_key=None):
         end_idx = len(content)  # No end_key provided, take until end
     return content[start_idx:end_idx].strip()
 
+# Summarizes an article using the Groq API and updates the 'summarizer_flow' table in Supabase
 def summarize_article(article_id, content, status_entries, systemPrompt):
     try:
         chat_completion = client.chat.completions.create(
@@ -107,6 +113,8 @@ def summarize_article(article_id, content, status_entries, systemPrompt):
         concluding_paragraph = extract_section(response_content, "ConcludingParagraph:")
 
         # Prepare data for update, always mark as summarized, but only update bulletpointsummary if json is valid
+        # Marking as summarized prevents an infinite loop, if the llm will always return bad JSON on this article for whatever reason
+        # The backup scraper scripts that run after this will be triggered based on the empty bulletpointsummary, but this one will always ignore the bad article going forward
         update_data = {
             "IntroParagraph": intro_paragraph,
             "ConcludingParagraph": concluding_paragraph,
@@ -115,7 +123,7 @@ def summarize_article(article_id, content, status_entries, systemPrompt):
         if valid_json:
             update_data["BulletPointSummary"] = bullet_point_summary
 
-        update_response, update_error = supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
+        update_error = supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
 
         if update_error and update_error != ('count', None):
             print(f"Failed to update summary for ID {article_id}: {update_error}")
@@ -127,6 +135,7 @@ def summarize_article(article_id, content, status_entries, systemPrompt):
         print(f"Error during the summarization process for ID {article_id}: {str(e)}")
         status_entries.append({"message": f"Error during summarization for ID {article_id}", "error": str(e)})
 
+# Main function to execute the summarization process
 def main():
     start_time = datetime.now(timezone.utc)
     articles = fetch_articles()

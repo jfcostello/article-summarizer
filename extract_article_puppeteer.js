@@ -1,7 +1,10 @@
+//This script uses Puppeteer to scrape article content from URLs stored in a Supabase database, logs the scraping status and duration, and updates the database with the scraped content. It handles error logging and ensures that all URLs marked as unscripted are processed.
+
 require("dotenv").config();
 const { createClient } = require("@supabase/supabase-js");
 const puppeteer = require("puppeteer");
 
+// Initializes a Supabase client using environment variables
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
@@ -9,6 +12,8 @@ const supabase = createClient(
 
 const scriptName = "extract_article_puppeteer.js";
 
+// Logs the status of the script to the 'log_script_status' table in Supabase
+// Converts log entries to JSON strings and inserts them along with the timestamp and status
 async function logStatus(scriptName, logEntries) {
   const logEntry = logEntries.map((entry) => JSON.stringify(entry)).join(", ");
   try {
@@ -27,6 +32,8 @@ async function logStatus(scriptName, logEntries) {
   }
 }
 
+// Logs the duration of the script execution to the 'log_script_duration' table in Supabase
+// Calculates duration in seconds and inserts the start time, end time, and duration
 async function logDuration(scriptName, startTime, endTime) {
   const durationSeconds = (endTime - startTime) / 1000;
   try {
@@ -45,6 +52,8 @@ async function logDuration(scriptName, startTime, endTime) {
   }
 }
 
+// Main function to scrape articles using Puppeteer and update Supabase with the scraped content
+// Fetches unscripted URLs, scrapes their content, logs the process, and handles errors
 async function scrapeArticles() {
   const startTime = new Date();
   let logEntries = []; // Initialize an array to store log entries
@@ -127,4 +136,5 @@ async function scrapeArticles() {
   console.log("Scraping process completed.");
 }
 
+// Initiates the article scraping process
 scrapeArticles();
