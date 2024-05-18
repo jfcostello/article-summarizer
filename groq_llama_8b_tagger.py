@@ -110,8 +110,6 @@ def generate_tags(article_id, content, systemPrompt):
     except Exception as e:
         return {"message": f"Error during tag generation for ID {article_id}", "error": str(e)}
 
-
-
 def main():
     start_time = datetime.now(timezone.utc)
     articles = fetch_articles()
