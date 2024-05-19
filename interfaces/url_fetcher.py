@@ -1,5 +1,5 @@
 # interfaces/url_fetcher.py
-# This module defines the URLFetcher interface for fetching URLs from various sources.
+# This module defines the URLFetcher interface for fetching URLs.
 
 from abc import ABC, abstractmethod
 
@@ -10,11 +10,11 @@ class URLFetcher(ABC):
     """
 
     @abstractmethod
-    def fetch_urls(self):
+    def fetch_and_store_urls(self):
         """
-        Fetch URLs from a source.
+        Fetch and store URLs.
         
         Returns:
-            list: A list of URLs.
+            None
         """
         pass

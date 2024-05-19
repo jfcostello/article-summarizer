@@ -43,6 +43,15 @@ def fetch_table_data(table_name, filters=None):
     response = query.execute()
     return response.data if response.data else []
 
+def fetch_feed_urls():
+    """
+    Fetch enabled RSS feed URLs from the 'rss_feed_list' table in Supabase.
+
+    Returns:
+        list: A list of enabled RSS feed URLs.
+    """
+    return fetch_table_data("rss_feed_list", {"isEnabled": 'TRUE'})
+
 def update_table_data(table_name, data, condition):
     """
     Update data in a specific table based on a condition.
