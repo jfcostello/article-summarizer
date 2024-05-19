@@ -1,4 +1,5 @@
 //This script uses Puppeteer to scrape article content from URLs stored in a Supabase database, logs the scraping status and duration, and updates the database with the scraped content. It handles error logging and ensures that all URLs marked as unscripted are processed.
+// This is set to be depreciated, if we can figure pyppeteer for simplicity. Keeping this file for now in case we need to fall back
 
 require("dotenv").config();
 const { createClient } = require("@supabase/supabase-js");

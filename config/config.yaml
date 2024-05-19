@@ -147,3 +147,11 @@ systemPrompt-Tagger-2: |
       {"tag": "general", "score":
 
 Reminder: you must pick only one of the allowed tags attached again
+
+# Placeholders for sensitive data (to be loaded from .env)
+supabase:
+  url: ${SUPABASE_URL}
+  key: ${SUPABASE_KEY}
+api_keys:
+  anthropic: ${ANTHROPIC_API_KEY}
+  groq: ${GROQ_API_KEY}
