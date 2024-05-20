@@ -54,7 +54,8 @@ def main():
     # Load configuration from config.yaml and .env
     config = load_config()
     
-    # Define the custom complex filters for fetching articles
+    # Define the custom complex filters for fetching articles. As this will clean up articles not fully finished by the first script, it will import ones that meet the following critieria
+    # summarized is not true, OR IntroParagraph is null, OR IntroParagraph is empty, OR BulletPointSummary is null, OR BulletPointSummary is empty, OR ConcludingParagraph is null, OR ConcludingParagraph is empty
     complex_filters = "summarized.eq.false,IntroParagraph.is.null,IntroParagraph.eq.,BulletPointSummary.is.null,BulletPointSummary.eq.,ConcludingParagraph.is.null,ConcludingParagraph.eq."
     
     # Fetch articles that have been scraped but not yet summarized, or have missing summary sections
