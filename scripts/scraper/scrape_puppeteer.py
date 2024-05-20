@@ -10,19 +10,14 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from interfaces.scraper import Scraper
-from utils.db_utils import get_supabase_client, fetch_table_data, update_table_data
-from utils.logging_utils import log_status, log_duration
+from utils.scraping_util import run_puppeteer_scraper  # Import the new wrapper function
 import asyncio
-from datetime import datetime
 from pyppeteer import launch
 
 class PuppeteerScraper(Scraper):
     """
     Scraper implementation using Pyppeteer to scrape content from URLs.
     """
-
-    def __init__(self):
-        self.supabase = get_supabase_client()
 
     async def scrape(self, url):
         """
@@ -45,30 +40,7 @@ class PuppeteerScraper(Scraper):
         """
         Run the scraping process for all URLs that need to be scraped.
         """
-        start_time = datetime.now()
-        log_entries = []
-
-        urls_to_scrape = fetch_table_data('summarizer_flow', {'scraped': False})
-
-        if not urls_to_scrape:
-            log_entries.append({"message": "No URLs to process."})
-            log_status('scrape_puppeteer.py', log_entries, 'No URLs')
-            log_duration('scrape_puppeteer.py', start_time, datetime.now())
-            return
-
-        for record in urls_to_scrape:
-            url = record['url']
-            try:
-                content = await self.scrape(url)
-                update_data = {'content': content, 'scraped': True}
-                update_table_data('summarizer_flow', update_data, ('id', record['id']))
-                log_entries.append({"message": f"Content updated successfully for URL {url}"})
-            except Exception as e:
-                log_entries.append({"message": f"Failed to scrape {url}: {str(e)}", "error": str(e)})
-
-        end_time = datetime.now()
-        log_status('scrape_puppeteer.py', log_entries, 'Complete')
-        log_duration('scrape_puppeteer.py', start_time, end_time)
+        await run_puppeteer_scraper(self.scrape)
 
 if __name__ == "__main__":
     scraper = PuppeteerScraper()
