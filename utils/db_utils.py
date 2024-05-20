@@ -23,29 +23,40 @@ def get_supabase_client():
     key = os.getenv('SUPABASE_KEY')
     return create_client(url, key)
 
-def fetch_table_data(table_name, filters=None, complex_filters=None):
+def fetch_table_data(table_name, filters=None, complex_filters=None, columns=None):
     """
-    Fetch data from a specific table with optional filters.
+    Fetch data from a specific table with optional filters and column selection.
     
     Args:
         table_name (str): The name of the table to fetch data from.
         filters (dict, optional): A dictionary of filters to apply to the query.
             Each key-value pair represents a column name and its desired value.
         complex_filters (str, optional): A complex filter string for more advanced queries.
+        columns (list, optional): A list of columns to select from the table.
     
     Returns:
         list: A list of records matching the query filters, or an empty list if no records are found.
     """
     supabase = get_supabase_client()
-    query = supabase.table(table_name).select("*")
+    
+    # Select specified columns or all columns if not provided
+    if columns:
+        query = supabase.table(table_name).select(", ".join(columns))
+    else:
+        query = supabase.table(table_name).select("*")
+    
+    # Apply filters to the query
     if filters:
         for key, value in filters.items():
             query = query.eq(key, value)
+    
+    # Apply complex filters to the query
     if complex_filters:
         query = query.or_(complex_filters)
+    
+    # Execute the query and return the results
     response = query.execute()
     return response.data if response.data else []
-
 
 def fetch_feed_urls():
     """
