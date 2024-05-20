@@ -101,10 +101,6 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
         # Perform the update
         supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
 
-        # Set ProductionReady to True if no errors
-        if valid_json:
-            supabase.table("summarizer_flow").update({"ProductionReady": True}).eq("id", article_id).execute()
-
         status_entries.append({"message": f"Summary updated successfully for ID {article_id}"})
 
     except Exception as e:
