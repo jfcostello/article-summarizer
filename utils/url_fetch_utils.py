@@ -1,14 +1,18 @@
 # utils/url_fetch_utils.py
 # Utility functions for URL fetching and handling.
 
-from utils.db_utils import fetch_table_data
+from utils.db_utils import get_supabase_client, fetch_feed_urls
+from utils.logging_utils import log_status, log_duration
+from datetime import datetime, timezone
 
-def fetch_existing_urls(supabase, table_name, batch_size=1000):
+# Initialize Supabase client using environment variables
+supabase = get_supabase_client()
+
+def fetch_existing_urls(table_name, batch_size=1000):
     """
     Fetch existing URLs from the specified table in batches.
     
     Args:
-        supabase (Client): The Supabase client.
         table_name (str): The name of the table to fetch URLs from.
         batch_size (int): The number of records to fetch per batch.
     
@@ -43,17 +47,13 @@ def deduplicate_urls(new_urls, existing_urls):
     new_urls_cleaned = [{**url, 'url': url['url'].strip()} for url in new_urls]  # Ensure URLs are trimmed
     deduplicated_urls = [url for url in new_urls_cleaned if url['url'] not in existing_urls]
     
-    # print(f"New URLs: {new_urls_cleaned}")  # Debug statement
-    # print(f"Deduplicated URLs: {deduplicated_urls}")  # Debug statement
-    
     return deduplicated_urls
 
-def insert_new_entries(supabase, table_name, new_entries, log_entries, batch_size=100):
+def insert_new_entries(table_name, new_entries, log_entries, batch_size=100):
     """
     Insert new entries into the specified table in batches.
     
     Args:
-        supabase (Client): The Supabase client.
         table_name (str): The name of the table to insert entries into.
         new_entries (list): List of new entries to be inserted.
         log_entries (list): List to store log entries.
@@ -82,3 +82,39 @@ def insert_new_entries(supabase, table_name, new_entries, log_entries, batch_siz
     for log_entry in log_entries:
         print(log_entry)  # Replace this with actual logging if necessary
 
+def process_feeds(log_entries, start_time, table_name="summarizer_flow", parse_feed=None):
+    """
+    Process the RSS feeds: fetch, parse, deduplicate, and insert new entries.
+    
+    Args:
+        log_entries (list): List to store log entries.
+        start_time (datetime): The start time of the script execution.
+        table_name (str): The name of the table to fetch and insert URLs. Defaults to "summarizer_flow".
+        parse_feed (function): The function to parse the RSS feed. Must be provided.
+    """
+    if parse_feed is None:
+        raise ValueError("A parse_feed function must be provided")
+
+    # Fetch enabled RSS feed URLs from the rss_feed_list table
+    rss_feeds_response = fetch_feed_urls()
+    
+    if not rss_feeds_response:
+        log_entries.append("Error fetching RSS feed URLs or no data found.")
+        log_status("fetch_urls_feedparser.py", {"messages": log_entries}, "Error")
+        log_duration("fetch_urls_feedparser.py", start_time, datetime.now(timezone.utc))
+        return
+
+    for feed in rss_feeds_response:
+        feed_url = feed['rss_feed']
+        new_entries = parse_feed(feed_url)
+        existing_urls = fetch_existing_urls(table_name)
+
+        deduplicated_entries = deduplicate_urls(new_entries, existing_urls)
+
+        if deduplicated_entries:
+            insert_new_entries(table_name, deduplicated_entries, log_entries)
+        else:
+            log_entries.append(f"No new URLs to add for {feed_url}.")
+
+    log_status("fetch_urls_feedparser.py", {"messages": log_entries}, "Success")
+    log_duration("fetch_urls_feedparser.py", start_time, datetime.now(timezone.utc))
