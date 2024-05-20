@@ -6,7 +6,6 @@
 from utils.db_utils import fetch_table_data, update_table_data
 from utils.logging_utils import log_status, log_duration
 from datetime import datetime
-import asyncio
 
 async def fetch_and_process_urls(table_name, fetch_condition, scraping_function, update_fields, script_name):
     """

@@ -4,7 +4,12 @@
 
 import re
 import json
-from utils.db_utils import get_supabase_client
+import os
+from datetime import datetime, timezone
+from utils.db_utils import get_supabase_client, fetch_articles_with_logic
+from utils.logging_utils import log_status, log_duration
+from utils.llm_utils import call_llm_api
+from config.config_loader import load_config
 
 # Initialize Supabase client using environment variables
 supabase = get_supabase_client()
@@ -58,7 +63,18 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
         api_call_func (function): The function to call the specific LLM API.
     """
     try:
-        response_content = api_call_func(content, systemPrompt)
+        response = api_call_func(content, systemPrompt)
+        if hasattr(response, 'choices'):
+            response_content = response.choices[0].message.content
+        elif hasattr(response, 'content') and isinstance(response.content, list):
+            structured_text = getattr(response.content[0], 'text', None)
+            if structured_text:
+                response_content = structured_text
+            else:
+                raise ValueError("Text attribute not found in response")
+        else:
+            raise ValueError("Invalid response format or empty content")
+
         intro_paragraph = extract_section(response_content, "IntroParagraph:", "BulletPointSummary:")
         bullet_point_summary = extract_section(response_content, "BulletPointSummary:", "ConcludingParagraph:")
         bullet_point_summary = custom_escape_quotes(bullet_point_summary)
@@ -93,3 +109,45 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
 
     except Exception as e:
         status_entries.append({"message": f"Error during summarization for ID {article_id}", "error": str(e)})
+
+def process_articles(script_name, primary=True, api_call_func=None):
+    """
+    Process articles by fetching them based on primary or backup logic, summarizing, and updating the database.
+    
+    Args:
+        primary (bool, optional): Whether to use primary logic. If False, use backup logic. Defaults to True.
+        api_call_func (function, optional): The function to call the specific LLM API. Defaults to None.
+    """
+
+    start_time = datetime.now(timezone.utc)
+    
+    # Load configuration from config.yaml and .env
+    config = load_config()
+    
+    # Fetch articles based on the specified logic
+    articles = fetch_articles_with_logic("summarizer_flow", primary=primary)
+    
+    # Initialize a list to store status messages
+    status_entries = []
+    
+    # Get the system prompt from the configuration
+    system_prompt = config['systemPrompt']
+
+    # If there are articles to summarize, process each one
+    if articles:
+        for article in articles:
+            summarize_article(article['id'], article['content'], status_entries, system_prompt, api_call_func)
+    else:
+        # If no articles to summarize, log that information
+        status_entries.append({"message": "No articles to summarize"})
+
+    # Record the end time of the script
+    end_time = datetime.now(timezone.utc)
+    
+    # Log the duration of the script
+    log_duration(script_name=script_name, start_time=start_time, end_time=end_time)
+    
+    # Log the status of the script
+    log_status(script_name=script_name, log_entries=status_entries, status="Complete")
+
+
