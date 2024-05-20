@@ -1,9 +1,9 @@
 # utils/url_fetch_utils.py
 # Utility functions for URL fetching and handling.
 
-from utils.db_utils import get_supabase_client, fetch_feed_urls
 from utils.logging_utils import log_status, log_duration
 from datetime import datetime, timezone
+from utils.db_utils import get_supabase_client, fetch_table_data, update_table_data  
 
 # Initialize Supabase client using environment variables
 supabase = get_supabase_client()
@@ -82,22 +82,23 @@ def insert_new_entries(table_name, new_entries, log_entries, batch_size=100):
     for log_entry in log_entries:
         print(log_entry)  # Replace this with actual logging if necessary
 
-def process_feeds(log_entries, start_time, table_name="summarizer_flow", parse_feed=None):
+def process_feeds(table_name="summarizer_flow", parse_feed=None):
     """
     Process the RSS feeds: fetch, parse, deduplicate, and insert new entries.
     
     Args:
-        log_entries (list): List to store log entries.
-        start_time (datetime): The start time of the script execution.
         table_name (str): The name of the table to fetch and insert URLs. Defaults to "summarizer_flow".
         parse_feed (function): The function to parse the RSS feed. Must be provided.
     """
+    start_time = datetime.now(timezone.utc)  # Initialize start time internally
+    log_entries = []  # Initialize log entries internally
+
     if parse_feed is None:
         raise ValueError("A parse_feed function must be provided")
 
     # Fetch enabled RSS feed URLs from the rss_feed_list table
-    rss_feeds_response = fetch_feed_urls()
-    
+    rss_feeds_response = fetch_table_data("rss_feed_list", {"isEnabled": 'TRUE'})
+
     if not rss_feeds_response:
         log_entries.append("Error fetching RSS feed URLs or no data found.")
         log_status("fetch_urls_feedparser.py", {"messages": log_entries}, "Error")
@@ -107,12 +108,13 @@ def process_feeds(log_entries, start_time, table_name="summarizer_flow", parse_f
     for feed in rss_feeds_response:
         feed_url = feed['rss_feed']
         new_entries = parse_feed(feed_url)
-        existing_urls = fetch_existing_urls(table_name)
+        existing_urls = fetch_table_data(table_name, {"scraped": False})
 
-        deduplicated_entries = deduplicate_urls(new_entries, existing_urls)
+        deduplicated_entries = [entry for entry in new_entries if entry['url'] not in {url['url'] for url in existing_urls}]
 
         if deduplicated_entries:
-            insert_new_entries(table_name, deduplicated_entries, log_entries)
+            update_table_data(table_name, deduplicated_entries, ('url', 'scraped'))
+            log_entries.append(f"New entries added for {feed_url}.")
         else:
             log_entries.append(f"No new URLs to add for {feed_url}.")
 
