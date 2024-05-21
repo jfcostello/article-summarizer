@@ -4,7 +4,10 @@
 # update the status of articles, load system prompts, construct system prompts, and fetch articles.
 
 import json
+from datetime import datetime, timezone
 from utils.db_utils import get_supabase_client, fetch_table_data
+from utils.logging_utils import log_status, log_duration
+from utils.llm_utils import call_llm_api
 from config.config_loader import load_config
 
 def process_tags(article_id, chat_completion, status_entries):
@@ -89,22 +92,35 @@ def fetch_articles():
         columns=["id", "ArticleTitle", "IntroParagraph", "BulletPointSummary", "ConcludingParagraph"]
     )
 
-def process_articles(articles, system_prompt, status_entries, generate_tags_func):
+def process_articles(script_name, primary=True, api_call_func=None):
     """
-    Process the list of articles, generate tags for each, and update the status entries.
+    Process articles by fetching them, generating tags, and logging the process and duration.
     
     Args:
-        articles (list): A list of articles to process.
-        system_prompt (str): The constructed system prompt.
-        status_entries (list): A list to store status messages for each article.
-        generate_tags_func (function): The function to generate tags for an article.
+        script_name (str): The name of the script for logging purposes.
+        primary (bool, optional): Whether to use primary logic. Defaults to True.
+        api_call_func (function, optional): The function to call the specific LLM API. Defaults to None.
     """
+    start_time = datetime.now(timezone.utc)
+    status_entries = []
+
+    # Construct the system prompt
+    system_prompt = construct_system_prompt()
+
+    # Fetch articles
+    articles = fetch_articles()
+
+    # Process articles
     if articles:
         for article in articles:
             article_id = article["id"]
             content = f"{article['ArticleTitle']} {article['IntroParagraph']} {article['BulletPointSummary']} {article['ConcludingParagraph']}"
-            result = generate_tags_func(article_id, content, system_prompt, status_entries)
-            status_entries.append(result)
+            result = api_call_func(content, system_prompt)
+            process_result = process_tags(article_id, result, status_entries)
+            status_entries.append(process_result)
     else:
-        print("No articles to tag.")
         status_entries.append({"message": "No articles to tag"})
+
+    end_time = datetime.now(timezone.utc)
+    log_duration(script_name, start_time, end_time)
+    log_status(script_name, status_entries, "Complete")

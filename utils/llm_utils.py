@@ -1,5 +1,6 @@
 # utils/llm_utils.py
-# This module provides utility functions to interact with various LLM APIs.
+# This module provides utility functions to interact with various LLM APIs. Instead of calling your llm in your script, just define it, and send the variables over as needed
+# Add new LLMs here as you use them, don't out them in other scripts
 
 import os
 
