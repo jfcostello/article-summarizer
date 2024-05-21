@@ -20,17 +20,10 @@ def fetch_existing_urls(table_name, batch_size=1000):
         set: A set of existing URLs.
     """
     existing_urls = set()
-    offset = 0
-
-    while True:
-        existing_urls_response = supabase.table(table_name).select("url").range(offset, offset + batch_size - 1).execute()
-        if not existing_urls_response.data:
-            break
-        
-        batch_urls = {item['url'].strip() for item in existing_urls_response.data}
-        existing_urls.update(batch_urls)
-        offset += batch_size
-
+    existing_urls_response = supabase.table(table_name).select("url").order("created_at", desc=True).limit(batch_size).execute()
+    if existing_urls_response.data:
+        existing_urls = {item['url'].strip() for item in existing_urls_response.data}
+    
     return existing_urls
 
 def deduplicate_urls(new_urls, existing_urls):
@@ -47,7 +40,7 @@ def deduplicate_urls(new_urls, existing_urls):
     new_urls_cleaned = [{**url, 'url': url['url'].strip()} for url in new_urls]  # Ensure URLs are trimmed
     deduplicated_urls = [url for url in new_urls_cleaned if url['url'] not in existing_urls]
     
-    return deduplicated_urls
+    return deduplicated_urls   
 
 def insert_new_entries(table_name, new_entries, log_entries, batch_size=100):
     """
@@ -63,24 +56,18 @@ def insert_new_entries(table_name, new_entries, log_entries, batch_size=100):
         batch = new_entries[i:i + batch_size]
         try:
             insert_response = supabase.table(table_name).insert(batch).execute()
-            if insert_response.data:
-                for entry in batch:
+            for entry in batch:
+                if entry['url'] in [item['url'] for item in insert_response.data]:
                     log_entries.append(f"Data inserted successfully for {entry['url']}.")
-            else:
-                for entry in batch:
-                    log_entries.append(f"Failed to insert data for {entry['url']}.")
+                else:
+                    log_entries.append(f"Failed to insert data for {entry['url']}. URL already exists.")
         except Exception as e:
             if "duplicate key value violates unique constraint" in str(e):
                 for entry in batch:
-                    if entry['url'] in str(e):
-                        log_entries.append(f"Duplicate URL detected by Supabase: {entry['url']}. Skipping insertion.")
+                    log_entries.append(f"Duplicate URL rejected by Supabase: {entry['url']}. Skipping insertion.")
             else:
                 for entry in batch:
                     log_entries.append(f"Error inserting data for {entry['url']}: {str(e)}")
-    
-    # Log the results of the insertion
-    for log_entry in log_entries:
-        print(log_entry)  # Replace this with actual logging if necessary
 
 def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="script"):
     """
@@ -108,13 +95,14 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
     for feed in rss_feeds_response:
         feed_url = feed['rss_feed']
         new_entries = parse_feed(feed_url)
-        existing_urls = fetch_table_data(table_name, {"scraped": False})
+        existing_urls = fetch_existing_urls(table_name)
 
-        deduplicated_entries = [entry for entry in new_entries if entry['url'] not in {url['url'] for url in existing_urls}]
+        deduplicated_entries = [entry for entry in new_entries if entry['url'] not in existing_urls]
 
         if deduplicated_entries:
-            update_table_data(table_name, deduplicated_entries, ('url', 'scraped'))
-            log_entries.append(f"New entries added for {feed_url}.")
+            insert_new_entries(table_name, deduplicated_entries, log_entries)
+            for entry in deduplicated_entries:
+                log_entries.append(f"New entry added: {entry['url']}")
         else:
             log_entries.append(f"No new URLs to add for {feed_url}.")
 
