@@ -3,7 +3,7 @@
 
 from utils.logging_utils import log_status, log_duration
 from datetime import datetime, timezone
-from utils.db_utils import get_supabase_client, fetch_table_data, update_table_data  
+from utils.db_utils import get_supabase_client, fetch_table_data, update_table_data
 
 # Initialize Supabase client using environment variables
 supabase = get_supabase_client()
@@ -82,13 +82,14 @@ def insert_new_entries(table_name, new_entries, log_entries, batch_size=100):
     for log_entry in log_entries:
         print(log_entry)  # Replace this with actual logging if necessary
 
-def process_feeds(table_name="summarizer_flow", parse_feed=None):
+def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="script"):
     """
     Process the RSS feeds: fetch, parse, deduplicate, and insert new entries.
     
     Args:
         table_name (str): The name of the table to fetch and insert URLs. Defaults to "summarizer_flow".
         parse_feed (function): The function to parse the RSS feed. Must be provided.
+        script_name (str): The name of the script for logging purposes.
     """
     start_time = datetime.now(timezone.utc)  # Initialize start time internally
     log_entries = []  # Initialize log entries internally
@@ -101,10 +102,9 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None):
 
     if not rss_feeds_response:
         log_entries.append("Error fetching RSS feed URLs or no data found.")
-        log_status("fetch_urls_feedparser.py", {"messages": log_entries}, "Error")
-        log_duration("fetch_urls_feedparser.py", start_time, datetime.now(timezone.utc))
+        log_status(script_name, {"messages": log_entries}, "Error")
+        log_duration(script_name, start_time, datetime.now(timezone.utc))
         return
-
     for feed in rss_feeds_response:
         feed_url = feed['rss_feed']
         new_entries = parse_feed(feed_url)
@@ -118,5 +118,5 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None):
         else:
             log_entries.append(f"No new URLs to add for {feed_url}.")
 
-    log_status("fetch_urls_feedparser.py", {"messages": log_entries}, "Success")
-    log_duration("fetch_urls_feedparser.py", start_time, datetime.now(timezone.utc))
+    log_status(script_name, {"messages": log_entries}, "Success")
+    log_duration(script_name, start_time, datetime.now(timezone.utc))

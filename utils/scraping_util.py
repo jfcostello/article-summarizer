@@ -47,17 +47,18 @@ async def fetch_and_process_urls(table_name, fetch_condition, scraping_function,
     log_status(script_name, log_entries, 'Complete')
     log_duration(script_name, start_time, end_time)
 
-async def run_puppeteer_scraper(scraping_function):
+async def run_puppeteer_scraper(scraping_function, script_name):
     """
     Run the Puppeteer scraping process for all URLs that need to be scraped.
     
     Args:
         scraping_function (function): The function to scrape content from a URL.
+        script_name (str): The name of the script for logging purposes.
     """
     await fetch_and_process_urls(
         table_name='summarizer_flow',
         fetch_condition={'scraped': False},
         scraping_function=scraping_function,
         update_fields=['content'],
-        script_name='scrape_puppeteer.py'
+        script_name=script_name
     )

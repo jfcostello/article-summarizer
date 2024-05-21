@@ -11,8 +11,8 @@ from utils.url_fetch_utils import process_feeds
 
 class FeedparserFetcher(URLFetcher):
     def fetch_and_store_urls(self):
-        # Process feeds using the utility function
-        process_feeds(parse_feed=self.parse_feed)
+        # Process feeds using the utility function and send script name for logging
+        process_feeds(parse_feed=self.parse_feed, script_name=os.path.basename(__file__))
 
     def parse_feed(self, feed_url):
         """

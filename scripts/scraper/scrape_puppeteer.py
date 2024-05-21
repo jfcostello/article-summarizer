@@ -10,7 +10,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from interfaces.scraper import Scraper
-from utils.scraping_util import run_puppeteer_scraper  # Import the new wrapper function
+from utils.scraping_util import run_puppeteer_scraper
 import asyncio
 from pyppeteer import launch
 
@@ -40,7 +40,7 @@ class PuppeteerScraper(Scraper):
         """
         Run the scraping process for all URLs that need to be scraped.
         """
-        await run_puppeteer_scraper(self.scrape)
+        await run_puppeteer_scraper(self.scrape, script_name=os.path.basename(__file__))
 
 if __name__ == "__main__":
     scraper = PuppeteerScraper()
