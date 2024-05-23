@@ -155,3 +155,19 @@ supabase:
 api_keys:
   anthropic: ${ANTHROPIC_API_KEY}
   groq: ${GROQ_API_KEY}
+
+interfaces:
+  fetch_urls:
+    primary: fetch_urls_feedparser
+    fallbacks: []
+  scraper:
+    primary: scrape_puppeteer
+    fallbacks: []
+  summarizer:
+    primary: summarizer_groq_llama8b
+    fallbacks:
+      - summarizer_claude_haiku
+  tagging:
+    primary: tagging_groq_llama8b
+    fallbacks: []
+

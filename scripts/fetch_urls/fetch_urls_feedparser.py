@@ -12,7 +12,8 @@ from utils.url_fetch_utils import process_feeds
 class FeedparserFetcher(URLFetcher):
     def fetch_and_store_urls(self):
         # Process feeds using the utility function and send script name for logging
-        process_feeds(parse_feed=self.parse_feed, script_name=os.path.basename(__file__))
+        success = process_feeds(parse_feed=self.parse_feed, script_name=os.path.basename(__file__))
+        return success
 
     def parse_feed(self, feed_url):
         """
@@ -37,4 +38,5 @@ class FeedparserFetcher(URLFetcher):
 
 if __name__ == "__main__":
     fetcher = FeedparserFetcher()
-    fetcher.fetch_and_store_urls()
+    success = fetcher.fetch_and_store_urls()
+    sys.exit(0 if success else 1)

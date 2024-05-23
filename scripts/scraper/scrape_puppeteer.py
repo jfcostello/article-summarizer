@@ -40,8 +40,10 @@ class PuppeteerScraper(Scraper):
         """
         Run the scraping process for all URLs that need to be scraped.
         """
-        await run_puppeteer_scraper(self.scrape, script_name=os.path.basename(__file__))
-
+        success = await run_puppeteer_scraper(self.scrape, script_name=os.path.basename(__file__))
+        return success
+    
 if __name__ == "__main__":
     scraper = PuppeteerScraper()
-    asyncio.run(scraper.run())
+    success = asyncio.run(scraper.run())
+    sys.exit(0 if success else 1)

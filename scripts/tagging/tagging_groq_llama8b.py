@@ -14,8 +14,9 @@ from utils.tagging_utils import process_articles
 from utils.llm_utils import call_llm_api
 
 if __name__ == "__main__":
-    process_articles(
+    success = process_articles(
         script_name=os.path.basename(__file__),
         primary=True,
         api_call_func=lambda content, systemPrompt: call_llm_api("llama3-8b-8192", content, systemPrompt, client_type="groq")
     )
+    sys.exit(0 if success else 1)

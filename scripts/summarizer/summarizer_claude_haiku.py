@@ -14,8 +14,8 @@ from utils.summarizer_utils import process_articles
 from utils.llm_utils import call_llm_api
 
 if __name__ == "__main__":
-    process_articles(
+    success = process_articles(
         script_name=os.path.basename(__file__),
-        primary=False,
         api_call_func=lambda content, systemPrompt: call_llm_api("claude-3-haiku-20240307", content, systemPrompt, client_type="anthropic")
     )
+    sys.exit(0 if success else 1)
