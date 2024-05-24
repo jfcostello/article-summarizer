@@ -109,39 +109,34 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
 def process_articles(script_name, primary=True, api_call_func=None):
     start_time = datetime.now(timezone.utc)
     status_entries = []
+    total_items = 0
+    failed_items = 0
 
-    try:
-        # Load configuration from config.yaml and .env
-        config = load_config()
-        
-        # Fetch articles based on the specified logic
-        articles = fetch_articles_with_logic("summarizer_flow", primary=primary)
-        
-        # Get the system prompt from the configuration
-        system_prompt = config['systemPrompt']
+    config = load_config()
+    articles = fetch_articles_with_logic("summarizer_flow", primary=primary)
+    system_prompt = config['systemPrompt']
 
-        # If there are articles to summarize, process each one
-        if articles:
-            for article in articles:
-                summarize_article(article['id'], article['content'], status_entries, system_prompt, api_call_func)
-        else:
-            # If no articles to summarize, log that information
-            status_entries.append({"message": "No articles to summarize"})
+    if articles:
+        for article in articles:
+            total_items += 1
+            summarize_article(article['id'], article['content'], status_entries, system_prompt, api_call_func)
+            if "error" in status_entries[-1].keys():
+                failed_items += 1
+    else:
+        status_entries.append({"message": "No articles to summarize"})
 
-        # Record the end time of the script
-        end_time = datetime.now(timezone.utc)
-        
-        # Log the duration of the script
-        log_duration(script_name=script_name, start_time=start_time, end_time=end_time)
-        
-        # Log the status of the script
-        log_status(script_name=script_name, log_entries=status_entries, status="Complete")
-        return True  # Return True on success
-    except Exception as e:
-        status_entries.append({"message": f"Exception during article processing: {e}"})
-        log_status(script_name=script_name, log_entries=status_entries, status="Error")
-        log_duration(script_name=script_name, start_time=start_time, end_time=datetime.now(timezone.utc))
-        return False  # Return False on exception
+    if failed_items == 0:
+        log_status(script_name, status_entries, "Success")
+        log_duration(script_name, start_time, datetime.now(timezone.utc))
+        return True
+    elif failed_items > 0 and failed_items < total_items:
+        log_status(script_name, status_entries, "Partial")
+        log_duration(script_name, start_time, datetime.now(timezone.utc))
+        return "partial"
+    else:
+        log_status(script_name, status_entries, "Error")
+        log_duration(script_name, start_time, datetime.now(timezone.utc))
+        return False
 
 
 

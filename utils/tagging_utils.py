@@ -92,37 +92,37 @@ def fetch_articles():
         columns=["id", "ArticleTitle", "IntroParagraph", "BulletPointSummary", "ConcludingParagraph"]
     )
 
-# utils/tagging_utils.py
-
 def process_articles(script_name, primary=True, api_call_func=None):
     start_time = datetime.now(timezone.utc)
     status_entries = []
+    total_items = 0
+    failed_items = 0
 
-    try:
-        # Construct the system prompt
-        system_prompt = construct_system_prompt()
+    system_prompt = construct_system_prompt()
+    articles = fetch_articles()
 
-        # Fetch articles
-        articles = fetch_articles()
+    if articles:
+        for article in articles:
+            total_items += 1
+            article_id = article["id"]
+            content = f"{article['ArticleTitle']} {article['IntroParagraph']} {article['BulletPointSummary']} {article['ConcludingParagraph']}"
+            result = api_call_func(content, system_prompt)
+            process_result = process_tags(article_id, result, status_entries)
+            if not process_result.get("message").startswith("Tags generated and updated successfully"):
+                failed_items += 1
+    else:
+        status_entries.append({"message": "No articles to tag"})
 
-        # Process articles
-        if articles:
-            for article in articles:
-                article_id = article["id"]
-                content = f"{article['ArticleTitle']} {article['IntroParagraph']} {article['BulletPointSummary']} {article['ConcludingParagraph']}"
-                result = api_call_func(content, system_prompt)
-                process_result = process_tags(article_id, result, status_entries)
-                status_entries.append(process_result)
-        else:
-            status_entries.append({"message": "No articles to tag"})
-
-        end_time = datetime.now(timezone.utc)
-        log_duration(script_name, start_time, end_time)
-        log_status(script_name, status_entries, "Complete")
-        return True  # Return True on success
-    except Exception as e:
-        status_entries.append({"message": f"Exception during article tagging: {e}"})
+    if failed_items == 0:
+        log_status(script_name, status_entries, "Success")
+        log_duration(script_name, start_time, datetime.now(timezone.utc))
+        return True
+    elif failed_items > 0 and failed_items < total_items:
+        log_status(script_name, status_entries, "Partial")
+        log_duration(script_name, start_time, datetime.now(timezone.utc))
+        return "partial"
+    else:
         log_status(script_name, status_entries, "Error")
         log_duration(script_name, start_time, datetime.now(timezone.utc))
-        return False  # Return False on exception
+        return False
 

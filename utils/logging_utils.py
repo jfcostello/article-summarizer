@@ -14,11 +14,18 @@ def log_status(script_name, log_entries, status):
     Args:
         script_name (str): The name of the script whose status is being logged.
         log_entries (list): A list of log messages to be recorded.
-        status (str): The overall status of the script execution (e.g., "Success", "Error").
+        status (str): The overall status of the script execution. Must be one of "Success", "Partial", or "Error".
     
     Returns:
         None
+    
+    Raises:
+        ValueError: If the provided status is not one of the allowed values.
     """
+    allowed_statuses = ["Success", "Partial", "Error"]
+    if status not in allowed_statuses:
+        raise ValueError(f"Invalid status '{status}'. Status must be one of {allowed_statuses}")
+    
     supabase = get_supabase_client()
     supabase.table("log_script_status").insert({
         "script_name": script_name,
@@ -26,7 +33,7 @@ def log_status(script_name, log_entries, status):
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "status": status
     }).execute()
-
+    
 def log_duration(script_name, start_time, end_time):
     """
     Logs the duration of the script execution to the Supabase database.

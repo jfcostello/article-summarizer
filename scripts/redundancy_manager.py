@@ -51,30 +51,35 @@ class RedundancyManager:
             **kwargs: Arbitrary keyword arguments for the task.
         
         Returns:
-            None
+            str: The overall status of the task execution ("Success", "Partial", or "Error").
         """
         task_config = self.config['interfaces'].get(task_name)
         if not task_config:
             self.logger.error(f"No configuration found for task: {task_name}")
-            return None
+            return "Error"
         
         implementations = [
             (task_config['primary'], True)
         ] + [(fallback, False) for fallback in task_config.get('fallbacks', [])]
 
         start_time = datetime.now()
+        task_status = "Success"
 
         # Run all implementations sequentially
         for impl, is_primary in implementations:
             script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), task_name, impl + ".py")
             result = self.execute_script(script_path)
-            if result:
-                log_status(task_name, [f"Success executing {impl}"], "Success")
-            else:
-                log_status(task_name, [f"Error executing {impl}"], "Error")
+            if result == "Partial":
+                task_status = "Partial"
+                self.logger.warning(f"Script {impl} returned partial success.")
+            elif result == "Error":
+                task_status = "Error"
+                self.logger.error(f"Script {impl} failed.")
 
         end_time = datetime.now()
         log_duration(task_name, start_time, end_time)
+
+        return task_status
 
     def execute_script(self, script_path):
         """
@@ -84,23 +89,41 @@ class RedundancyManager:
             script_path (str): The path to the script to be executed.
         
         Returns:
-            bool: True if the script executed successfully, False otherwise.
+            str: "Success" if the script executed successfully, "Error" if it failed,
+                 or "Partial" if it returned a partial success.
         """
         try:
             result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
             self.logger.info(f"Script Output: {result.stdout}")
             self.logger.error(f"Script Error: {result.stderr}")
             if result.returncode == 0:
-                return True
+                return "Success"
+            elif result.returncode == 2:
+                return "Partial"
             else:
                 self.logger.error(f"Script returned non-zero exit code: {result.returncode}")
-                return False
+                return "Error"
         except Exception as e:
             self.logger.error(f"Error executing script {script_path}: {e}")
-            return False
+            return "Error"
 
 if __name__ == "__main__":
     # Create an instance of RedundancyManager with the path to the configuration file
     manager = RedundancyManager('config/config.yaml')
-    # Execute a task with redundancy logic
-    manager.execute_with_redundancy('fetch_urls')
+    
+    # Execute tasks with redundancy logic
+    fetch_urls_status = manager.execute_with_redundancy('fetch_urls')
+    scraper_status = manager.execute_with_redundancy('scraper')
+    summarizer_status = manager.execute_with_redundancy('summarizer')
+    tagging_status = manager.execute_with_redundancy('tagging')
+
+    # Determine the overall status of the run
+    if all(status == "Success" for status in [fetch_urls_status, scraper_status, summarizer_status, tagging_status]):
+        overall_status = "Success"
+    elif any(status == "Error" for status in [fetch_urls_status, scraper_status, summarizer_status, tagging_status]):
+        overall_status = "Error"
+    else:
+        overall_status = "Partial"
+
+    # Log the overall status of the run
+    log_status("Redundancy Manager", [f"Overall run status: {overall_status}"], overall_status)
