@@ -92,35 +92,37 @@ def fetch_articles():
         columns=["id", "ArticleTitle", "IntroParagraph", "BulletPointSummary", "ConcludingParagraph"]
     )
 
+# utils/tagging_utils.py
+
 def process_articles(script_name, primary=True, api_call_func=None):
-    """
-    Process articles by fetching them, generating tags, and logging the process and duration.
-    
-    Args:
-        script_name (str): The name of the script for logging purposes.
-        primary (bool, optional): Whether to use primary logic. Defaults to True.
-        api_call_func (function, optional): The function to call the specific LLM API. Defaults to None.
-    """
     start_time = datetime.now(timezone.utc)
     status_entries = []
 
-    # Construct the system prompt
-    system_prompt = construct_system_prompt()
+    try:
+        # Construct the system prompt
+        system_prompt = construct_system_prompt()
 
-    # Fetch articles
-    articles = fetch_articles()
+        # Fetch articles
+        articles = fetch_articles()
 
-    # Process articles
-    if articles:
-        for article in articles:
-            article_id = article["id"]
-            content = f"{article['ArticleTitle']} {article['IntroParagraph']} {article['BulletPointSummary']} {article['ConcludingParagraph']}"
-            result = api_call_func(content, system_prompt)
-            process_result = process_tags(article_id, result, status_entries)
-            status_entries.append(process_result)
-    else:
-        status_entries.append({"message": "No articles to tag"})
+        # Process articles
+        if articles:
+            for article in articles:
+                article_id = article["id"]
+                content = f"{article['ArticleTitle']} {article['IntroParagraph']} {article['BulletPointSummary']} {article['ConcludingParagraph']}"
+                result = api_call_func(content, system_prompt)
+                process_result = process_tags(article_id, result, status_entries)
+                status_entries.append(process_result)
+        else:
+            status_entries.append({"message": "No articles to tag"})
 
-    end_time = datetime.now(timezone.utc)
-    log_duration(script_name, start_time, end_time)
-    log_status(script_name, status_entries, "Complete")
+        end_time = datetime.now(timezone.utc)
+        log_duration(script_name, start_time, end_time)
+        log_status(script_name, status_entries, "Complete")
+        return True  # Return True on success
+    except Exception as e:
+        status_entries.append({"message": f"Exception during article tagging: {e}"})
+        log_status(script_name, status_entries, "Error")
+        log_duration(script_name, start_time, datetime.now(timezone.utc))
+        return False  # Return False on exception
+

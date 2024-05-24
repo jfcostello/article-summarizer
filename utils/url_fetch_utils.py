@@ -70,41 +70,41 @@ def insert_new_entries(table_name, new_entries, log_entries, batch_size=100):
                     log_entries.append(f"Error inserting data for {entry['url']}: {str(e)}")
 
 def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="script"):
-    """
-    Process the RSS feeds: fetch, parse, deduplicate, and insert new entries.
-    
-    Args:
-        table_name (str): The name of the table to fetch and insert URLs. Defaults to "summarizer_flow".
-        parse_feed (function): The function to parse the RSS feed. Must be provided.
-        script_name (str): The name of the script for logging purposes.
-    """
     start_time = datetime.now(timezone.utc)  # Initialize start time internally
     log_entries = []  # Initialize log entries internally
 
     if parse_feed is None:
         raise ValueError("A parse_feed function must be provided")
 
-    # Fetch enabled RSS feed URLs from the rss_feed_list table
-    rss_feeds_response = fetch_table_data("rss_feed_list", {"isEnabled": 'TRUE'})
+    try:
+        # Fetch enabled RSS feed URLs from the rss_feed_list table
+        rss_feeds_response = fetch_table_data("rss_feed_list", {"isEnabled": 'TRUE'})
 
-    if not rss_feeds_response:
-        log_entries.append("Error fetching RSS feed URLs or no data found.")
+        if not rss_feeds_response:
+            log_entries.append("Error fetching RSS feed URLs or no data found.")
+            log_status(script_name, {"messages": log_entries}, "Error")
+            log_duration(script_name, start_time, datetime.now(timezone.utc))
+            return False  # Return False on failure
+
+        for feed in rss_feeds_response:
+            feed_url = feed['rss_feed']
+            new_entries = parse_feed(feed_url)
+            existing_urls = fetch_existing_urls(table_name)
+
+            deduplicated_entries = [entry for entry in new_entries if entry['url'] not in existing_urls]
+
+            if deduplicated_entries:
+                insert_new_entries(table_name, deduplicated_entries, log_entries)
+                for entry in deduplicated_entries:
+                    log_entries.append(f"New entry added: {entry['url']}")
+            else:
+                log_entries.append(f"No new URLs to add for {feed_url}.")
+
+        log_status(script_name, {"messages": log_entries}, "Success")
+        log_duration(script_name, start_time, datetime.now(timezone.utc))
+        return True  # Return True on success
+    except Exception as e:
+        log_entries.append(f"Exception during feed processing: {e}")
         log_status(script_name, {"messages": log_entries}, "Error")
         log_duration(script_name, start_time, datetime.now(timezone.utc))
-        return
-    for feed in rss_feeds_response:
-        feed_url = feed['rss_feed']
-        new_entries = parse_feed(feed_url)
-        existing_urls = fetch_existing_urls(table_name)
-
-        deduplicated_entries = [entry for entry in new_entries if entry['url'] not in existing_urls]
-
-        if deduplicated_entries:
-            insert_new_entries(table_name, deduplicated_entries, log_entries)
-            for entry in deduplicated_entries:
-                log_entries.append(f"New entry added: {entry['url']}")
-        else:
-            log_entries.append(f"No new URLs to add for {feed_url}.")
-
-    log_status(script_name, {"messages": log_entries}, "Success")
-    log_duration(script_name, start_time, datetime.now(timezone.utc))
+        return False  # Return False on exception

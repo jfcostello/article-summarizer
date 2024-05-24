@@ -107,43 +107,41 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
         status_entries.append({"message": f"Error during summarization for ID {article_id}", "error": str(e)})
 
 def process_articles(script_name, primary=True, api_call_func=None):
-    """
-    Process articles by fetching them based on primary or backup logic, summarizing, and updating the database.
-    
-    Args:
-        primary (bool, optional): Whether to use primary logic. If False, use backup logic. Defaults to True.
-        api_call_func (function, optional): The function to call the specific LLM API. Defaults to None.
-    """
-
     start_time = datetime.now(timezone.utc)
-    
-    # Load configuration from config.yaml and .env
-    config = load_config()
-    
-    # Fetch articles based on the specified logic
-    articles = fetch_articles_with_logic("summarizer_flow", primary=primary)
-    
-    # Initialize a list to store status messages
     status_entries = []
-    
-    # Get the system prompt from the configuration
-    system_prompt = config['systemPrompt']
 
-    # If there are articles to summarize, process each one
-    if articles:
-        for article in articles:
-            summarize_article(article['id'], article['content'], status_entries, system_prompt, api_call_func)
-    else:
-        # If no articles to summarize, log that information
-        status_entries.append({"message": "No articles to summarize"})
+    try:
+        # Load configuration from config.yaml and .env
+        config = load_config()
+        
+        # Fetch articles based on the specified logic
+        articles = fetch_articles_with_logic("summarizer_flow", primary=primary)
+        
+        # Get the system prompt from the configuration
+        system_prompt = config['systemPrompt']
 
-    # Record the end time of the script
-    end_time = datetime.now(timezone.utc)
-    
-    # Log the duration of the script
-    log_duration(script_name=script_name, start_time=start_time, end_time=end_time)
-    
-    # Log the status of the script
-    log_status(script_name=script_name, log_entries=status_entries, status="Complete")
+        # If there are articles to summarize, process each one
+        if articles:
+            for article in articles:
+                summarize_article(article['id'], article['content'], status_entries, system_prompt, api_call_func)
+        else:
+            # If no articles to summarize, log that information
+            status_entries.append({"message": "No articles to summarize"})
+
+        # Record the end time of the script
+        end_time = datetime.now(timezone.utc)
+        
+        # Log the duration of the script
+        log_duration(script_name=script_name, start_time=start_time, end_time=end_time)
+        
+        # Log the status of the script
+        log_status(script_name=script_name, log_entries=status_entries, status="Complete")
+        return True  # Return True on success
+    except Exception as e:
+        status_entries.append({"message": f"Exception during article processing: {e}"})
+        log_status(script_name=script_name, log_entries=status_entries, status="Error")
+        log_duration(script_name=script_name, start_time=start_time, end_time=datetime.now(timezone.utc))
+        return False  # Return False on exception
+
 
 
