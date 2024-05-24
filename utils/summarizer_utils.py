@@ -106,14 +106,14 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
     except Exception as e:
         status_entries.append({"message": f"Error during summarization for ID {article_id}", "error": str(e)})
 
-def process_articles(script_name, primary=True, api_call_func=None):
+def process_articles(script_name, api_call_func=None):
     start_time = datetime.now(timezone.utc)
     status_entries = []
     total_items = 0
     failed_items = 0
 
     config = load_config()
-    articles = fetch_articles_with_logic("summarizer_flow", primary=primary)
+    articles = fetch_articles_with_logic("summarizer_flow")  # Removed primary=primary
     system_prompt = config['systemPrompt']
 
     if articles:

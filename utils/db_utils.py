@@ -83,21 +83,16 @@ def update_table_data(table_name, data, condition):
     supabase = get_supabase_client()
     supabase.table(table_name).update(data).eq(condition[0], condition[1]).execute()
 
-def fetch_articles_with_logic(table_name, primary=True):
+def fetch_articles_with_logic(table_name):
     """
-    Fetch articles from a specified table using either primary or backup logic.
+    Fetch articles from a specified table using logic that fetches articles where specific summary fields are null or empty.
 
     Args:
         table_name (str): The name of the table to fetch articles from.
-        primary (bool, optional): Whether to use primary logic. If False, use backup logic. Defaults to True.
 
     Returns:
         list: A list of articles matching the logic.
     """
     base_conditions = {"scraped": True}
-    if primary:
-        complex_filters = "summarized.eq.false"
-    else:
-        complex_filters = "summarized.eq.false,IntroParagraph.is.null,IntroParagraph.eq.,BulletPointSummary.is.null,BulletPointSummary.eq.,ConcludingParagraph.is.null,ConcludingParagraph.eq."
-
+    complex_filters = "or(summarized.eq.false,IntroParagraph.is.null,IntroParagraph.eq.,BulletPointSummary.is.null,BulletPointSummary.eq.,ConcludingParagraph.is.null,ConcludingParagraph.eq.)"
     return fetch_table_data(table_name, filters=base_conditions, complex_filters=complex_filters)
