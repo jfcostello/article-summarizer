@@ -63,20 +63,30 @@ class RedundancyManager:
         ] + [(fallback, False) for fallback in task_config.get('fallbacks', [])]
 
         start_time = datetime.now()
-        task_status = "Success"
+        task_statuses = []
 
         # Run all implementations sequentially
         for impl, is_primary in implementations:
             script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), task_name, impl + ".py")
             result = self.execute_script(script_path)
-            if result == "Partial":
-                task_status = "Partial"
+            task_statuses.append(result)
+            if result == "Success":
+                self.logger.info(f"Script {impl} executed successfully.")
+            elif result == "Partial":
                 self.logger.warning(f"Script {impl} returned partial success.")
             elif result == "Error":
-                task_status = "Error"
                 self.logger.error(f"Script {impl} failed.")
 
+        # Determine the overall status of the task
+        if "Success" in task_statuses:
+            task_status = "Success"
+        elif "Partial" in task_statuses:
+            task_status = "Partial"
+        else:
+            task_status = "Error"
+
         end_time = datetime.now()
+        log_status(task_name, task_statuses, task_status)
         log_duration(task_name, start_time, end_time)
 
         return task_status
@@ -125,5 +135,5 @@ if __name__ == "__main__":
     else:
         overall_status = "Partial"
 
-    # Log the overall status of the run
     log_status("Redundancy Manager", [f"Overall run status: {overall_status}"], overall_status)
+    log_duration("Redundancy Manager", datetime.now(), datetime.now())

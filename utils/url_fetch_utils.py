@@ -85,7 +85,7 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
             log_entries.append("Error fetching RSS feed URLs or no data found.")
             log_status(script_name, {"messages": log_entries}, "Error")
             log_duration(script_name, start_time, datetime.now(timezone.utc))
-            return False
+            return "Error"
 
         for feed in rss_feeds_response:
             feed_url = feed['rss_feed']
@@ -103,19 +103,16 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
 
         if failed_items == 0:
             log_status(script_name, {"messages": log_entries}, "Success")
-            log_duration(script_name, start_time, datetime.now(timezone.utc))
-            return True
         elif failed_items > 0 and failed_items < total_items:
             log_status(script_name, {"messages": log_entries}, "Partial")
-            log_duration(script_name, start_time, datetime.now(timezone.utc))
-            return "partial"
         else:
             log_status(script_name, {"messages": log_entries}, "Error")
-            log_duration(script_name, start_time, datetime.now(timezone.utc))
-            return False
+
+        log_duration(script_name, start_time, datetime.now(timezone.utc))
+        return "Success" if failed_items == 0 else "Partial" if failed_items > 0 and failed_items < total_items else "Error"
 
     except Exception as e:
         log_entries.append(f"Exception during feed processing: {e}")
         log_status(script_name, {"messages": log_entries}, "Error")
         log_duration(script_name, start_time, datetime.now(timezone.utc))
-        return False
+        return "Error"

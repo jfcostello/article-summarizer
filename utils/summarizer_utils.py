@@ -124,19 +124,13 @@ def process_articles(script_name, primary=True, api_call_func=None):
                 failed_items += 1
     else:
         status_entries.append({"message": "No articles to summarize"})
-
+        
     if failed_items == 0:
         log_status(script_name, status_entries, "Success")
-        log_duration(script_name, start_time, datetime.now(timezone.utc))
-        return True
     elif failed_items > 0 and failed_items < total_items:
         log_status(script_name, status_entries, "Partial")
-        log_duration(script_name, start_time, datetime.now(timezone.utc))
-        return "partial"
     else:
         log_status(script_name, status_entries, "Error")
-        log_duration(script_name, start_time, datetime.now(timezone.utc))
-        return False
 
-
-
+    log_duration(script_name, start_time, datetime.now(timezone.utc))
+    return "Success" if failed_items == 0 else "Partial" if failed_items > 0 and failed_items < total_items else "Error"
