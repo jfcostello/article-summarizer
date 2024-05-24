@@ -104,8 +104,11 @@ class RedundancyManager:
         """
         try:
             result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
-            self.logger.info(f"Script Output: {result.stdout}")
-            self.logger.error(f"Script Error: {result.stderr}")
+            if result.stdout:
+                self.logger.info(f"Script Output: {result.stdout.strip()}")
+            if result.stderr:
+                self.logger.error(f"Script Error: {result.stderr.strip()}")
+            
             if result.returncode == 0:
                 return "Success"
             elif result.returncode == 2:
