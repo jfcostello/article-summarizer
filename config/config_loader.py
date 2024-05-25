@@ -1,7 +1,3 @@
-# config/config_loader.py
-# This module provides a function to load configurations from config.yaml and .env files.
-# It ensures that sensitive data is loaded from .env while other configurations are loaded from config.yaml.
-
 import yaml
 import os
 from dotenv import load_dotenv
@@ -25,5 +21,10 @@ def load_config():
     config['supabase']['key'] = os.getenv('SUPABASE_KEY')
     config['api_keys']['anthropic'] = os.getenv('ANTHROPIC_API_KEY')
     config['api_keys']['groq'] = os.getenv('GROQ_API_KEY')
+
+    # Ensure Celery configuration is loaded
+    if 'celery' in config:
+        config['celery']['broker_url'] = config['celery'].get('broker_url', 'pyamqp://guest@localhost//')
+        config['celery']['result_backend'] = config['celery'].get('result_backend', 'rpc://')
 
     return config

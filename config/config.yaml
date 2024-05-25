@@ -155,6 +155,10 @@ supabase:
 api_keys:
   anthropic: ${ANTHROPIC_API_KEY}
   groq: ${GROQ_API_KEY}
+  
+celery:
+  broker_url: 'pyamqp://guest@localhost//'
+  result_backend: 'rpc://'
 
 interfaces:
   fetch_urls:

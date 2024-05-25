@@ -42,12 +42,13 @@ class RedundancyManager:
         with open(config_path, 'r') as file:
             return yaml.safe_load(file)
 
-    def execute_with_redundancy(self, task_name, *args, **kwargs):
+    def execute_with_redundancy(self, task_name, send_status=False, *args, **kwargs):
         """
         Execute all implementations of a task sequentially to ensure all work is handled.
         
         Args:
             task_name (str): Name of the task to be executed.
+            send_status (bool): Whether to send statuses to Celery.
             *args: Variable length argument list for the task.
             **kwargs: Arbitrary keyword arguments for the task.
         
@@ -94,6 +95,9 @@ class RedundancyManager:
         end_time = datetime.now()
         log_status(task_name, task_statuses, task_status)
         log_duration(task_name, start_time, end_time)
+
+        if send_status:
+            app.send_task('tasks.update_status', args=[task_name, task_statuses, task_status])
 
         return total_new_urls
 
@@ -145,3 +149,5 @@ if __name__ == "__main__":
     # Trigger the next tasks if new URLs were added
     if total_new_urls > 0:
         app.send_task('tasks.run_dependent_tasks')
+
+
