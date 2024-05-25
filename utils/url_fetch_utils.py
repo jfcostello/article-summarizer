@@ -52,15 +52,14 @@ def insert_new_entries(table_name, new_entries, log_entries, batch_size=100):
         log_entries (list): List to store log entries.
         batch_size (int): The number of records to insert per batch.
     """
+    inserted_count = 0
     for i in range(0, len(new_entries), batch_size):
         batch = new_entries[i:i + batch_size]
         try:
             insert_response = supabase.table(table_name).insert(batch).execute()
+            inserted_count += len(insert_response.data)
             for entry in batch:
-                if entry['url'] in [item['url'] for item in insert_response.data]:
-                    log_entries.append(f"Data inserted successfully for {entry['url']}.")
-                else:
-                    log_entries.append(f"Failed to insert data for {entry['url']}. URL already exists.")
+                log_entries.append(f"Data inserted successfully for {entry['url']}.")
         except Exception as e:
             if "duplicate key value violates unique constraint" in str(e):
                 for entry in batch:
@@ -68,12 +67,14 @@ def insert_new_entries(table_name, new_entries, log_entries, batch_size=100):
             else:
                 for entry in batch:
                     log_entries.append(f"Error inserting data for {entry['url']}: {str(e)}")
+    return inserted_count
 
 def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="script"):
     start_time = datetime.now(timezone.utc)
     log_entries = []
     total_items = 0
     failed_items = 0
+    total_new_urls = 0
 
     if parse_feed is None:
         raise ValueError("A parse_feed function must be provided")
@@ -85,7 +86,7 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
             log_entries.append("Error fetching RSS feed URLs or no data found.")
             log_status(script_name, {"messages": log_entries}, "Error")
             log_duration(script_name, start_time, datetime.now(timezone.utc))
-            return "Error"
+            return 0, "Error"
 
         for feed in rss_feeds_response:
             feed_url = feed['rss_feed']
@@ -95,7 +96,8 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
             deduplicated_entries = deduplicate_urls(new_entries, existing_urls)
 
             if deduplicated_entries:
-                insert_new_entries(table_name, deduplicated_entries, log_entries)
+                new_url_count = insert_new_entries(table_name, deduplicated_entries, log_entries)
+                total_new_urls += new_url_count
                 for entry in deduplicated_entries:
                     log_entries.append(f"New entry added: {entry['url']}")
             else:
@@ -103,16 +105,20 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
 
         if failed_items == 0:
             log_status(script_name, {"messages": log_entries}, "Success")
+            status = "Success"
         elif failed_items > 0 and failed_items < total_items:
             log_status(script_name, {"messages": log_entries}, "Partial")
+            status = "Partial"
         else:
             log_status(script_name, {"messages": log_entries}, "Error")
+            status = "Error"
 
         log_duration(script_name, start_time, datetime.now(timezone.utc))
-        return "Success" if failed_items == 0 else "Partial" if failed_items > 0 and failed_items < total_items else "Error"
+        return total_new_urls, status
 
     except Exception as e:
         log_entries.append(f"Exception during feed processing: {e}")
         log_status(script_name, {"messages": log_entries}, "Error")
         log_duration(script_name, start_time, datetime.now(timezone.utc))
-        return "Error"
+        return 0, "Error"
+

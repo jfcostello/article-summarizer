@@ -1,16 +1,17 @@
-# scripts/redundancy_manager.py
-
 import sys
 import os
 import yaml
 import logging
 import subprocess
 from datetime import datetime
+from celery import Celery
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.logging_utils import log_status, log_duration
+
+app = Celery('tasks', broker='pyamqp://guest@localhost//')
 
 class RedundancyManager:
     """
@@ -51,12 +52,12 @@ class RedundancyManager:
             **kwargs: Arbitrary keyword arguments for the task.
         
         Returns:
-            str: The overall status of the task execution ("Success", "Partial", or "Error").
+            int: The total count of new URLs added by all scripts.
         """
         task_config = self.config['interfaces'].get(task_name)
         if not task_config:
             self.logger.error(f"No configuration found for task: {task_name}")
-            return "Error"
+            return 0
         
         implementations = [
             (task_config['primary'], True)
@@ -64,13 +65,18 @@ class RedundancyManager:
 
         start_time = datetime.now()
         task_statuses = []
+        total_new_urls = 0
 
         # Run all implementations sequentially
         for impl, is_primary in implementations:
             script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), task_name, impl + ".py")
             result = self.execute_script(script_path)
             task_statuses.append(result)
-            if result == "Success":
+            if isinstance(result, int):
+                total_new_urls += result
+                if result > 0:
+                    self.logger.info(f"Script {impl} added {result} new URLs.")
+            elif result == "Success":
                 self.logger.info(f"Script {impl} executed successfully.")
             elif result == "Partial":
                 self.logger.warning(f"Script {impl} returned partial success.")
@@ -78,18 +84,18 @@ class RedundancyManager:
                 self.logger.error(f"Script {impl} failed.")
 
         # Determine the overall status of the task
-        if "Success" in task_statuses:
-            task_status = "Success"
+        if "Error" in task_statuses:
+            task_status = "Error"
         elif "Partial" in task_statuses:
             task_status = "Partial"
         else:
-            task_status = "Error"
+            task_status = "Success"
 
         end_time = datetime.now()
         log_status(task_name, task_statuses, task_status)
         log_duration(task_name, start_time, end_time)
 
-        return task_status
+        return total_new_urls
 
     def execute_script(self, script_path):
         """
@@ -99,13 +105,19 @@ class RedundancyManager:
             script_path (str): The path to the script to be executed.
         
         Returns:
-            str: "Success" if the script executed successfully, "Error" if it failed,
-                 or "Partial" if it returned a partial success.
+            str or int: "Success" if the script executed successfully, "Error" if it failed,
+                        "Partial" if it returned a partial success, or an integer count of new URLs added.
         """
         try:
             result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
             if result.stdout:
                 self.logger.info(f"Script Output: {result.stdout.strip()}")
+                try:
+                    # Attempt to parse the output as an integer (new URL count)
+                    new_url_count = int(result.stdout.strip())
+                    return new_url_count
+                except ValueError:
+                    pass
             if result.stderr:
                 self.logger.error(f"Script Error: {result.stderr.strip()}")
             
@@ -124,19 +136,12 @@ if __name__ == "__main__":
     # Create an instance of RedundancyManager with the path to the configuration file
     manager = RedundancyManager('config/config.yaml')
     
-    # Execute tasks with redundancy logic
-    fetch_urls_status = manager.execute_with_redundancy('fetch_urls')
-    scraper_status = manager.execute_with_redundancy('scraper')
-    summarizer_status = manager.execute_with_redundancy('summarizer')
-    tagging_status = manager.execute_with_redundancy('tagging')
+    # Execute fetch_urls task and aggregate the URL counts
+    total_new_urls = manager.execute_with_redundancy('fetch_urls')
+    
+    # Log the total new URLs added
+    log_status("fetch_urls", [f"Total new URLs added: {total_new_urls}"], "Success" if total_new_urls >= 0 else "Error")
 
-    # Determine the overall status of the run
-    if all(status == "Success" for status in [fetch_urls_status, scraper_status, summarizer_status, tagging_status]):
-        overall_status = "Success"
-    elif any(status == "Error" for status in [fetch_urls_status, scraper_status, summarizer_status, tagging_status]):
-        overall_status = "Error"
-    else:
-        overall_status = "Partial"
-
-    log_status("Redundancy Manager", [f"Overall run status: {overall_status}"], overall_status)
-    log_duration("Redundancy Manager", datetime.now(), datetime.now())
+    # Trigger the next tasks if new URLs were added
+    if total_new_urls > 0:
+        app.send_task('tasks.run_dependent_tasks')
