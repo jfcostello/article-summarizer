@@ -10,6 +10,7 @@ from utils.db_utils import get_supabase_client, fetch_articles_with_logic
 from utils.logging_utils import log_status, log_duration
 from utils.llm_utils import call_llm_api
 from config.config_loader import load_config
+from task_management.celery_app import app
 
 # Initialize Supabase client using environment variables
 supabase = get_supabase_client()
@@ -113,7 +114,7 @@ def process_articles(script_name, api_call_func=None):
     failed_items = 0
 
     config = load_config()
-    articles = fetch_articles_with_logic("summarizer_flow")  # Removed primary=primary
+    articles = fetch_articles_with_logic("summarizer_flow")
     system_prompt = config['systemPrompt']
 
     if articles:
@@ -127,10 +128,17 @@ def process_articles(script_name, api_call_func=None):
         
     if failed_items == 0:
         log_status(script_name, status_entries, "Success")
+        task_status = "Success"
     elif failed_items > 0 and failed_items < total_items:
         log_status(script_name, status_entries, "Partial")
+        task_status = "Partial"
     else:
         log_status(script_name, status_entries, "Error")
+        task_status = "Error"
 
     log_duration(script_name, start_time, datetime.now(timezone.utc))
+
+    # Send task finished message to Celery
+    app.send_task('task_management.celery_app.task_finished', args=[script_name, task_status])
+
     return "Success" if failed_items == 0 else "Partial" if failed_items > 0 and failed_items < total_items else "Error"

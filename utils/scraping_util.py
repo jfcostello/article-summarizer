@@ -6,6 +6,7 @@
 from utils.db_utils import fetch_table_data, update_table_data
 from utils.logging_utils import log_status, log_duration
 from datetime import datetime
+from task_management.celery_app import app
 
 async def fetch_and_process_urls(table_name, fetch_condition, scraping_function, update_fields, script_name):
     start_time = datetime.now()
@@ -19,6 +20,7 @@ async def fetch_and_process_urls(table_name, fetch_condition, scraping_function,
         log_entries.append({"message": "No URLs to process."})
         log_status(script_name, log_entries, 'Success')
         log_duration(script_name, start_time, datetime.now())
+        app.send_task('task_management.celery_app.task_finished', args=[script_name, "Success"])
         return "Success"
 
     for record in urls_to_scrape:
@@ -36,13 +38,17 @@ async def fetch_and_process_urls(table_name, fetch_condition, scraping_function,
 
     if failed_items == 0:
         log_status(script_name, log_entries, "Success")
+        status = "Success"
     elif failed_items > 0 and failed_items < total_items:
         log_status(script_name, log_entries, "Partial")
+        status = "Partial"
     else:
         log_status(script_name, log_entries, "Error")
+        status = "Error"
 
     log_duration(script_name, start_time, datetime.now())
-    return "Success" if failed_items == 0 else "Partial" if failed_items > 0 and failed_items < total_items else "Error"
+    app.send_task('task_management.celery_app.task_finished', args=[script_name, status])
+    return status
 
 async def run_puppeteer_scraper(scraping_function, script_name):
     try:
