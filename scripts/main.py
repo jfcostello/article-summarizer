@@ -3,26 +3,26 @@ from redundancy_manager import RedundancyManager
 from utils.logging_utils import log_status, log_duration
 from datetime import datetime
 
-def main(task=None, send_status=False):
+def main(task=None):
     manager = RedundancyManager('config/config.yaml')
 
     # Start time for overall duration logging
     overall_start_time = datetime.now()
 
     if task == "fetch_urls":
-        manager.execute_with_redundancy('fetch_urls', send_status)
+        manager.execute_with_redundancy('fetch_urls')
     elif task == "scrape_content":
-        manager.execute_with_redundancy('scraper', send_status)
+        manager.execute_with_redundancy('scraper')
     elif task == "summarize_articles":
-        manager.execute_with_redundancy('summarizer', send_status)
+        manager.execute_with_redundancy('summarizer')
     elif task == "tag_articles":
-        manager.execute_with_redundancy('tagging', send_status)
+        manager.execute_with_redundancy('tagging')
     else:
         # Execute all tasks sequentially
-        fetch_urls_status = manager.execute_with_redundancy('fetch_urls', send_status)
-        scraper_status = manager.execute_with_redundancy('scraper', send_status)
-        summarizer_status = manager.execute_with_redundancy('summarizer', send_status)
-        tagging_status = manager.execute_with_redundancy('tagging', send_status)
+        fetch_urls_status = manager.execute_with_redundancy('fetch_urls')
+        scraper_status = manager.execute_with_redundancy('scraper')
+        summarizer_status = manager.execute_with_redundancy('summarizer')
+        tagging_status = manager.execute_with_redundancy('tagging')
 
         # Determine the overall status of the run
         if all(status == "Success" for status in [fetch_urls_status, scraper_status, summarizer_status, tagging_status]):
@@ -40,11 +40,7 @@ def main(task=None, send_status=False):
         log_duration("Redundancy Manager", overall_start_time, overall_end_time)
 
 if __name__ == "__main__":
-    if len(sys.argv) == 3:
-        task = sys.argv[1]
-        send_status = sys.argv[2].lower() == 'true'
-        main(task, send_status)
-    elif len(sys.argv) == 2:
+    if len(sys.argv) == 2:
         task = sys.argv[1]
         main(task)
     else:
