@@ -109,31 +109,29 @@ class RedundancyManager:
             script_path (str): The path to the script to be executed.
         
         Returns:
-            str or int: "Success" if the script executed successfully, "Error" if it failed,
-                        "Partial" if it returned a partial success, or an integer count of new URLs added.
+            str: "Success" if the script executed successfully, "Failure" if it failed.
         """
         try:
             result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
             if result.stdout:
-                self.logger.info(f"Script Output: {result.stdout.strip()}")
+                logging.info(f"Script Output: {result.stdout.strip()}")
                 try:
-                    # Attempt to parse the output as an integer (new URL count)
                     new_url_count = int(result.stdout.strip())
                     return new_url_count
                 except ValueError:
                     pass
             if result.stderr:
-                self.logger.error(f"Script Error: {result.stderr.strip()}")
+                logging.error(f"Script Error: {result.stderr.strip()}")
             
             if result.returncode == 0:
                 return "Success"
             elif result.returncode == 2:
                 return "Partial"
             else:
-                self.logger.error(f"Script returned non-zero exit code: {result.returncode}")
+                logging.error(f"Script returned non-zero exit code: {result.returncode}")
                 return "Error"
         except Exception as e:
-            self.logger.error(f"Error executing script {script_path}: {e}")
+            logging.error(f"Error executing script {script_path}: {e}")
             return "Error"
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from celery.schedules import crontab
 from config.config_loader import load_config
 import subprocess
 from datetime import datetime, timedelta
+from scripts.redundancy_manager import execute_script
 
 config = load_config()
 app = Celery('tasks', broker=config['celery']['broker_url'])
@@ -37,8 +38,6 @@ app.conf.update(
 )
 
 task_queue = []
-task_running = False
-last_execution_time = None
 
 @app.task(name='task_management.celery_app.fetch_urls')
 def fetch_urls():
@@ -53,38 +52,50 @@ def fetch_urls():
             return 0
     return 0
 
-@app.task(name='task_management.celery_app.scraper', time_limit=1800, soft_time_limit=1500)
-def scraper():
-    subprocess.run([sys.executable, "scripts/main.py", "scrape_content"], check=True)
+@app.task(bind=True, name='task_management.celery_app.scraper', time_limit=420, soft_time_limit=300)
+def scraper(self):
+    try:
+        status = execute_script("scripts/main.py scrape_content")
+        return status
+    except Exception as exc:
+        # Log the exception or handle it if necessary
+        return str(exc)
 
-@app.task(name='task_management.celery_app.summarizer', time_limit=1800, soft_time_limit=1500)
-def summarizer():
-    subprocess.run([sys.executable, "scripts/main.py", "summarize_articles"], check=True)
+@app.task(bind=True, name='task_management.celery_app.summarizer', time_limit=420, soft_time_limit=300)
+def summarizer(self):
+    try:
+        status = execute_script("scripts/main.py summarize_articles")
+        return status
+    except Exception as exc:
+        # Log the exception or handle it if necessary
+        return str(exc)
 
-@app.task(name='task_management.celery_app.tagging', time_limit=1800, soft_time_limit=1500)
-def tagging():
-    subprocess.run([sys.executable, "scripts/main.py", "tag_articles"], check=True)
+@app.task(bind=True, name='task_management.celery_app.tagging', time_limit=420, soft_time_limit=300)
+def tagging(self):
+    try:
+        status = execute_script("scripts/main.py tag_articles")
+        return status
+    except Exception as exc:
+        # Log the exception or handle it if necessary
+        return str(exc)
 
 @app.task(name='task_management.celery_app.execute_additional_tasks')
 def execute_additional_tasks():
-    global task_running, last_execution_time
-    task_running = True
-    last_execution_time = datetime.now()
-
-    scraper.apply_async(link=summarizer.s())
-    summarizer.apply_async(link=tagging.s())
-    tagging.apply_async(link=task_finished.s())
+    task_chain = chain(
+        scraper.s(),
+        summarizer.s(),
+        tagging.s(),
+        task_finished.s()
+    )
+    task_chain.apply_async()
 
 @app.task(name='task_management.celery_app.task_finished')
 def task_finished():
-    global task_running
-    task_running = False
+    pass
 
 @app.task(name='task_management.celery_app.process_task_queue')
 def process_task_queue():
-    global task_queue, task_running
-
-    if not task_running and len(task_queue) > 0:
+    if len(task_queue) > 0:
         task_name = task_queue.pop(0)
         execute_additional_tasks.delay()
 
