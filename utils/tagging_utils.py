@@ -126,7 +126,4 @@ def process_articles(script_name, primary=True, api_call_func=None):
 
     log_duration(script_name, start_time, datetime.now(timezone.utc))
 
-    # Send task finished message to Celery
-    app.send_task('task_management.celery_app.task_finished', args=[script_name, task_status])
-
     return "Success" if failed_items == 0 else "Partial" if failed_items > 0 and failed_items < total_items else "Error"

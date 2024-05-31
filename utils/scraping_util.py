@@ -20,7 +20,6 @@ async def fetch_and_process_urls(table_name, fetch_condition, scraping_function,
         log_entries.append({"message": "No URLs to process."})
         log_status(script_name, log_entries, 'Success')
         log_duration(script_name, start_time, datetime.now())
-        app.send_task('task_management.celery_app.task_finished', args=[script_name, "Success"])
         return "Success"
 
     for record in urls_to_scrape:
@@ -47,7 +46,6 @@ async def fetch_and_process_urls(table_name, fetch_condition, scraping_function,
         status = "Error"
 
     log_duration(script_name, start_time, datetime.now())
-    app.send_task('task_management.celery_app.task_finished', args=[script_name, status])
     return status
 
 async def run_puppeteer_scraper(scraping_function, script_name):

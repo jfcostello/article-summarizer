@@ -10,6 +10,8 @@ from config.config_loader import load_config
 import subprocess
 from datetime import datetime, timedelta
 from scripts.redundancy_manager import execute_script
+from utils.url_fetch_utils import process_feeds
+from scripts.fetch_urls.fetch_urls_feedparser import FeedparserFetcher
 
 config = load_config()
 app = Celery('tasks', broker=config['celery']['broker_url'])
@@ -26,13 +28,13 @@ app.conf.update(
             'task': 'task_management.celery_app.fetch_urls',
             'schedule': crontab(minute='*/2'),
         },
+        'check-execute-additional-tasks-every-30-minutes': {
+            'task': 'task_management.celery_app.check_execute_additional_tasks',
+            'schedule': crontab(minute='*/30'),
+        },
         'process-task-queue-every-minute': {
             'task': 'task_management.celery_app.process_task_queue',
             'schedule': crontab(minute='*/1'),
-        },
-        'add-additional-tasks-to-queue-every-30-minutes': {
-            'task': 'task_management.celery_app.add_additional_tasks_to_queue',
-            'schedule': crontab(minute='*/30'),
         },
     }
 )
@@ -41,16 +43,11 @@ task_queue = []
 
 @app.task(name='task_management.celery_app.fetch_urls')
 def fetch_urls():
-    result = subprocess.run([sys.executable, "scripts/main.py", "fetch_urls"], capture_output=True, text=True)
-    if result.returncode == 0:
-        try:
-            total_new_urls = int(result.stdout.strip())
-            if total_new_urls > 0:
-                task_queue.append('execute_additional_tasks')
-            return total_new_urls
-        except ValueError:
-            return 0
-    return 0
+    feedparser_fetcher = FeedparserFetcher()
+    total_new_urls = process_feeds(parse_feed=feedparser_fetcher.parse_feed, app=app)
+    if total_new_urls > 0:
+        task_queue.append('execute_additional_tasks')
+    return total_new_urls
 
 @app.task(bind=True, name='task_management.celery_app.scraper', time_limit=420, soft_time_limit=300)
 def scraper(self):
@@ -84,24 +81,18 @@ def execute_additional_tasks():
     task_chain = chain(
         scraper.s(),
         summarizer.s(),
-        tagging.s(),
-        task_finished.s()
+        tagging.s()
     )
     task_chain.apply_async()
 
-@app.task(name='task_management.celery_app.task_finished')
-def task_finished():
-    pass
+@app.task(name='task_management.celery_app.check_execute_additional_tasks')
+def check_execute_additional_tasks():
+    if 'execute_additional_tasks' not in task_queue:
+        task_queue.append('execute_additional_tasks')
 
 @app.task(name='task_management.celery_app.process_task_queue')
 def process_task_queue():
-    if len(task_queue) > 0:
+    if task_queue:
         task_name = task_queue.pop(0)
-        execute_additional_tasks.delay()
-
-@app.task(name='task_management.celery_app.add_additional_tasks_to_queue')
-def add_additional_tasks_to_queue():
-    global last_execution_time
-
-    if last_execution_time is None or (datetime.now() - last_execution_time) > timedelta(minutes=30):
-        task_queue.append('execute_additional_tasks')
+        if task_name == 'execute_additional_tasks':
+            execute_additional_tasks.delay()

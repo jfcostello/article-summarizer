@@ -4,7 +4,6 @@
 from utils.logging_utils import log_status, log_duration
 from datetime import datetime, timezone
 from utils.db_utils import get_supabase_client, fetch_table_data, update_table_data
-from task_management.celery_app import app
 
 # Initialize Supabase client using environment variables
 supabase = get_supabase_client()
@@ -70,7 +69,7 @@ def insert_new_entries(table_name, new_entries, log_entries, batch_size=100):
                     log_entries.append(f"Error inserting data for {entry['url']}: {str(e)}")
     return inserted_count
 
-def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="script"):
+def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="script", app=None):
     start_time = datetime.now(timezone.utc)
     log_entries = []
     total_items = 0
@@ -87,8 +86,7 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
             log_entries.append("Error fetching RSS feed URLs or no data found.")
             log_status(script_name, {"messages": log_entries}, "Error")
             log_duration(script_name, start_time, datetime.now(timezone.utc))
-            app.send_task('task_management.celery_app.task_finished', args=[script_name, "Error"])
-            return 0, "Error"
+            return 0
 
         for feed in rss_feeds_response:
             feed_url = feed['rss_feed']
@@ -107,22 +105,22 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
 
         if failed_items == 0:
             log_status(script_name, {"messages": log_entries}, "Success")
-            status = "Success"
         elif failed_items > 0 and failed_items < total_items:
             log_status(script_name, {"messages": log_entries}, "Partial")
-            status = "Partial"
         else:
             log_status(script_name, {"messages": log_entries}, "Error")
-            status = "Error"
 
         log_duration(script_name, start_time, datetime.now(timezone.utc))
-        app.send_task('task_management.celery_app.task_finished', args=[script_name, status])
-        return total_new_urls, status
+        return total_new_urls
 
     except Exception as e:
         log_entries.append(f"Exception during feed processing: {e}")
         log_status(script_name, {"messages": log_entries}, "Error")
         log_duration(script_name, start_time, datetime.now(timezone.utc))
-        app.send_task('task_management.celery_app.task_finished', args=[script_name, "Error"])
-        return 0, "Error"
+        return 0
 
+    except Exception as e:
+        log_entries.append(f"Exception during feed processing: {e}")
+        log_status(script_name, {"messages": log_entries}, "Error")
+        log_duration(script_name, start_time, datetime.now(timezone.utc))
+        return 0
