@@ -52,29 +52,30 @@ def fetch_urls():
 @app.task(bind=True, name='task_management.celery_app.scraper', time_limit=420, soft_time_limit=300)
 def scraper(self):
     try:
-        status = execute_script("scripts/main.py scrape_content")
+        status = execute_script("scripts/scraper/scrape_puppeteer.py")
         return status
     except Exception as exc:
         # Log the exception or handle it if necessary
         return str(exc)
 
 @app.task(bind=True, name='task_management.celery_app.summarizer', time_limit=420, soft_time_limit=300)
-def summarizer(self):
+def summarizer(self, *args, **kwargs):
     try:
-        status = execute_script("scripts/main.py summarize_articles")
+        status = execute_script("scripts/summarizer/summarizer_groq_llama8b.py")
         return status
     except Exception as exc:
         # Log the exception or handle it if necessary
         return str(exc)
 
 @app.task(bind=True, name='task_management.celery_app.tagging', time_limit=420, soft_time_limit=300)
-def tagging(self):
+def tagging(self, *args, **kwargs):
     try:
-        status = execute_script("scripts/main.py tag_articles")
+        status = execute_script("scripts/tagging/tagging_groq_llama8b.py")
         return status
     except Exception as exc:
         # Log the exception or handle it if necessary
         return str(exc)
+
 
 @app.task(name='task_management.celery_app.execute_additional_tasks')
 def execute_additional_tasks():

@@ -42,64 +42,65 @@ class RedundancyManager:
         with open(config_path, 'r') as file:
             return yaml.safe_load(file)
 
-    def execute_with_redundancy(self, task_name, send_status=False, *args, **kwargs):
-        """
-        Execute all implementations of a task sequentially to ensure all work is handled.
-        
-        Args:
-            task_name (str): Name of the task to be executed.
-            send_status (bool): Whether to send statuses to Celery.
-            *args: Variable length argument list for the task.
-            **kwargs: Arbitrary keyword arguments for the task.
-        
-        Returns:
-            int: The total count of new URLs added by all scripts.
-        """
-        task_config = self.config['interfaces'].get(task_name)
-        if not task_config:
-            self.logger.error(f"No configuration found for task: {task_name}")
-            return 0
-        
-        implementations = [
-            (task_config['primary'], True)
-        ] + [(fallback, False) for fallback in task_config.get('fallbacks', [])]
+def execute_with_redundancy(self, task_name, send_status=False, *args, **kwargs):
+    """
+    Execute all implementations of a task sequentially to ensure all work is handled.
+    
+    Args:
+        task_name (str): Name of the task to be executed.
+        send_status (bool): Whether to send statuses to Celery.
+        *args: Variable length argument list for the task.
+        **kwargs: Arbitrary keyword arguments for the task.
+    
+    Returns:
+        int: The total count of new URLs added by all scripts.
+    """
+    task_config = self.config['interfaces'].get(task_name)
+    if not task_config:
+        self.logger.error(f"No configuration found for task: {task_name}")
+        return 0
+    
+    implementations = [
+        (task_config['primary'], True)
+    ] + [(fallback, False) for fallback in task_config.get('fallbacks', [])]
 
-        start_time = datetime.now()
-        task_statuses = []
-        total_new_urls = 0
+    start_time = datetime.now()
+    task_statuses = []
+    total_new_urls = 0
 
-        # Run all implementations sequentially
-        for impl, is_primary in implementations:
-            script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), task_name, impl + ".py")
-            result = execute_script(script_path)
-            task_statuses.append(result)
-            if isinstance(result, int):
-                total_new_urls += result
-                if result > 0:
-                    self.logger.info(f"Script {impl} added {result} new URLs.")
-            elif result == "Success":
-                self.logger.info(f"Script {impl} executed successfully.")
-            elif result == "Partial":
-                self.logger.warning(f"Script {impl} returned partial success.")
-            elif result == "Error":
-                self.logger.error(f"Script {impl} failed.")
+    # Run all implementations sequentially
+    for impl, is_primary in implementations:
+        script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts", task_name, impl + ".py")
+        result = execute_script(script_path)
+        task_statuses.append(result)
+        if isinstance(result, int):
+            total_new_urls += result
+            if result > 0:
+                self.logger.info(f"Script {impl} added {result} new URLs.")
+        elif result == "Success":
+            self.logger.info(f"Script {impl} executed successfully.")
+        elif result == "Partial":
+            self.logger.warning(f"Script {impl} returned partial success.")
+        elif result == "Error":
+            self.logger.error(f"Script {impl} failed.")
 
-        # Determine the overall status of the task
-        if "Error" in task_statuses:
-            task_status = "Error"
-        elif "Partial" in task_statuses:
-            task_status = "Partial"
-        else:
-            task_status = "Success"
+    # Determine the overall status of the task
+    if "Error" in task_statuses:
+        task_status = "Error"
+    elif "Partial" in task_statuses:
+        task_status = "Partial"
+    else:
+        task_status = "Success"
 
-        end_time = datetime.now()
-        log_status(task_name, task_statuses, task_status)
-        log_duration(task_name, start_time, end_time)
+    end_time = datetime.now()
+    log_status(task_name, task_statuses, task_status)
+    log_duration(task_name, start_time, end_time)
 
-        if send_status:
-            app.send_task('tasks.update_status', args=[task_name, task_statuses, task_status])
+    if send_status:
+        app.send_task('tasks.update_status', args=[task_name, task_statuses, task_status])
 
-        return total_new_urls
+    return total_new_urls
+
 
 def execute_script(script_path):
     """
