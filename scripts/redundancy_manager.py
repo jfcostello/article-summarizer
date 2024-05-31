@@ -71,7 +71,7 @@ class RedundancyManager:
         # Run all implementations sequentially
         for impl, is_primary in implementations:
             script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), task_name, impl + ".py")
-            result = self.execute_script(script_path)
+            result = execute_script(script_path)
             task_statuses.append(result)
             if isinstance(result, int):
                 total_new_urls += result
@@ -101,38 +101,38 @@ class RedundancyManager:
 
         return total_new_urls
 
-    def execute_script(self, script_path):
-        """
-        Execute a script as a subprocess and capture its output.
+def execute_script(script_path):
+    """
+    Execute a script as a subprocess and capture its output.
+    
+    Args:
+        script_path (str): The path to the script to be executed.
+    
+    Returns:
+        str: "Success" if the script executed successfully, "Failure" if it failed.
+    """
+    try:
+        result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
+        if result.stdout:
+            logging.info(f"Script Output: {result.stdout.strip()}")
+            try:
+                new_url_count = int(result.stdout.strip())
+                return new_url_count
+            except ValueError:
+                pass
+        if result.stderr:
+            logging.error(f"Script Error: {result.stderr.strip()}")
         
-        Args:
-            script_path (str): The path to the script to be executed.
-        
-        Returns:
-            str: "Success" if the script executed successfully, "Failure" if it failed.
-        """
-        try:
-            result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
-            if result.stdout:
-                logging.info(f"Script Output: {result.stdout.strip()}")
-                try:
-                    new_url_count = int(result.stdout.strip())
-                    return new_url_count
-                except ValueError:
-                    pass
-            if result.stderr:
-                logging.error(f"Script Error: {result.stderr.strip()}")
-            
-            if result.returncode == 0:
-                return "Success"
-            elif result.returncode == 2:
-                return "Partial"
-            else:
-                logging.error(f"Script returned non-zero exit code: {result.returncode}")
-                return "Error"
-        except Exception as e:
-            logging.error(f"Error executing script {script_path}: {e}")
+        if result.returncode == 0:
+            return "Success"
+        elif result.returncode == 2:
+            return "Partial"
+        else:
+            logging.error(f"Script returned non-zero exit code: {result.returncode}")
             return "Error"
+    except Exception as e:
+        logging.error(f"Error executing script {script_path}: {e}")
+        return "Error"
 
 if __name__ == "__main__":
     # Create an instance of RedundancyManager with the path to the configuration file
