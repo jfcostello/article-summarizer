@@ -41,41 +41,56 @@ app.conf.update(
 
 task_queue = []
 
+scripts_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+
 @app.task(name='task_management.celery_app.fetch_urls')
 def fetch_urls():
-    feedparser_fetcher = FeedparserFetcher()
-    total_new_urls = process_feeds(parse_feed=feedparser_fetcher.parse_feed, app=app)
-    if total_new_urls > 0:
-        task_queue.append('execute_additional_tasks')
-    return total_new_urls
+    try:
+        result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'fetch_urls'], capture_output=True, text=True)
+        total_new_urls = int(result.stdout.strip())
+        if total_new_urls > 0:
+            task_queue.append('execute_additional_tasks')
+        return total_new_urls
+    except Exception as exc:
+        return str(exc)
 
 @app.task(bind=True, name='task_management.celery_app.scraper', time_limit=420, soft_time_limit=300)
-def scraper(self):
+def scraper(self, *args, **kwargs):
     try:
-        status = execute_script("scripts/scraper/scrape_puppeteer.py")
-        return status
+        result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'scrape_content'], capture_output=True, text=True)
+        return result.stdout
     except Exception as exc:
-        # Log the exception or handle it if necessary
         return str(exc)
 
 @app.task(bind=True, name='task_management.celery_app.summarizer', time_limit=420, soft_time_limit=300)
 def summarizer(self, *args, **kwargs):
     try:
-        status = execute_script("scripts/summarizer/summarizer_groq_llama8b.py")
-        return status
+        result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'summarize_articles'], capture_output=True, text=True)
+        return result.stdout
     except Exception as exc:
-        # Log the exception or handle it if necessary
         return str(exc)
 
 @app.task(bind=True, name='task_management.celery_app.tagging', time_limit=420, soft_time_limit=300)
 def tagging(self, *args, **kwargs):
     try:
-        status = execute_script("scripts/tagging/tagging_groq_llama8b.py")
-        return status
+        result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'tag_articles'], capture_output=True, text=True)
+        return result.stdout
     except Exception as exc:
-        # Log the exception or handle it if necessary
         return str(exc)
 
+@app.task(name='task_management.celery_app.process_task_queue')
+def process_task_queue():
+    if task_queue:
+        task_name = task_queue.pop(0)
+        if task_name == 'execute_additional_tasks':
+            execute_additional_tasks.delay()
+
+@app.task(name='task_management.celery_app.process_task_queue')
+def process_task_queue():
+    if task_queue:
+        task_name = task_queue.pop(0)
+        if task_name == 'execute_additional_tasks':
+            execute_additional_tasks.delay()
 
 @app.task(name='task_management.celery_app.execute_additional_tasks')
 def execute_additional_tasks():
@@ -90,10 +105,3 @@ def execute_additional_tasks():
 def check_execute_additional_tasks():
     if 'execute_additional_tasks' not in task_queue:
         task_queue.append('execute_additional_tasks')
-
-@app.task(name='task_management.celery_app.process_task_queue')
-def process_task_queue():
-    if task_queue:
-        task_name = task_queue.pop(0)
-        if task_name == 'execute_additional_tasks':
-            execute_additional_tasks.delay()
