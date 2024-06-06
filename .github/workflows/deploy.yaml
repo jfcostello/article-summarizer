@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+      - staging
 
 jobs:
-  deploy:
+  deploy_main:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
@@ -36,6 +38,41 @@ jobs:
             git pull origin main
           else
             echo "Directory /srv/article_summarizer does not exist"
+            exit 1
+          fi
+          EOF
+
+  deploy_staging:
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH Key Manually
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.UBUNTU_SERVER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.UBUNTU_SERVER }}" | tr -d '\r' > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 139.177.197.79 >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Deploy to Server
+        run: |
+          ssh -o StrictHostKeyChecking=no gituser@139.177.197.79 'bash -s' << 'EOF'
+          cd /srv/staging/article_summarizer
+          if [ $? -eq 0 ]; then
+            echo "Directory exists, listing contents:"
+            ls -la
+            echo "Stashing any local changes..."
+            git stash push --include-untracked
+            echo "Pulling latest changes from origin/staging..."
+            git pull origin staging
+          else
+            echo "Directory /srv/staging/article_summarizer does not exist"
             exit 1
           fi
           EOF
