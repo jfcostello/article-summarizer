@@ -60,6 +60,7 @@ def fetch_urls():
 
         if total_new_urls > 0:
             task_queue.append('execute_additional_tasks')
+            print("DEBUG: Added 'execute_additional_tasks' to the task queue") 
         # else:  # You might want to log here if no URLs were found
 
         return total_new_urls
@@ -93,17 +94,16 @@ def tagging(self, *args, **kwargs):
 
 @app.task(name='task_management.celery_app.process_task_queue')
 def process_task_queue():
+    print("DEBUG: process_task_queue function called.") 
     if task_queue:
+        print(f"DEBUG: Task queue contains: {task_queue}") 
         task_name = task_queue.pop(0)
         if task_name == 'execute_additional_tasks':
             execute_additional_tasks.delay()
 
-@app.task(name='task_management.celery_app.process_task_queue')
-def process_task_queue():
-    if task_queue:
-        task_name = task_queue.pop(0)
-        if task_name == 'execute_additional_tasks':
-            execute_additional_tasks.delay()
+@app.task(name='task_management.celery_app.trigger_queue_processing') # New task for manual trigger
+def trigger_queue_processing():
+    process_task_queue.delay()  # Call the queue processing task
 
 @app.task(name='task_management.celery_app.execute_additional_tasks')
 def execute_additional_tasks():
