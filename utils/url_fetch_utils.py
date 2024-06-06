@@ -94,10 +94,12 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
             deduplicated_entries = deduplicate_urls(new_entries, existing_urls)
 
             if deduplicated_entries:
-                new_url_count = insert_new_entries(table_name, deduplicated_entries, log_entries) # Batch size removed here
+                new_url_count = insert_new_entries(table_name, deduplicated_entries, log_entries)
                 total_new_urls += new_url_count
+                # Log "New entry added" ONLY if insertion was successful:
                 for entry in deduplicated_entries:
-                    log_entries.append(f"New entry added: {entry['url']}")
+                    if any(f"Data inserted successfully for {entry['url']}" in log for log in log_entries):
+                        log_entries.append(f"New entry added: {entry['url']}") 
             else:
                 log_entries.append(f"No new URLs to add for {feed_url}.")
 
