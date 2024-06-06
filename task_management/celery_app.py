@@ -1,3 +1,5 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
+# task_management/celery_app.py
 import sys
 import os
 

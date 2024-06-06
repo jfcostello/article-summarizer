@@ -1,3 +1,6 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
+# scripts/main.py
+
 import sys
 from redundancy_manager import RedundancyManager
 from utils.logging_utils import log_status, log_duration

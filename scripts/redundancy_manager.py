@@ -1,3 +1,6 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
+# scripts/redundancy_mamager.py
+
 import sys
 import os
 import yaml

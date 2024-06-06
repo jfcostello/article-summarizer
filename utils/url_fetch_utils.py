@@ -1,3 +1,4 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
 # utils/url_fetch_utils.py
 # Utility functions for URL fetching and handling.
 

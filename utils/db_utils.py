@@ -1,3 +1,4 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
 # utils/db_utils.py
 # This module provides utility functions for interacting with the Supabase database.
 # These functions handle common database operations such as fetching and updating data,

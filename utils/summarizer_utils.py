@@ -1,3 +1,4 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
 # utils/summarizer_utils.py
 # This module provides utility functions for summarizing articles.
 # It includes functions for escaping quotes, extracting sections, and summarizing using different APIs.

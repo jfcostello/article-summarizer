@@ -1,3 +1,4 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
 # scripts/fetch_urls/fetch_urls_feedparser.py
 
 import sys

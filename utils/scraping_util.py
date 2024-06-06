@@ -1,3 +1,4 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
 # utils/scraping_utils.py
 # This module provides utility functions for scraping and processing URLs.
 # It includes functions to fetch URLs from the database, process each URL by scraping content,

@@ -1,3 +1,4 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
 # utils/tagging_utils.py
 # This module provides utility functions for processing tags for summarized articles.
 # It includes functions to parse JSON responses, insert tags into the database,

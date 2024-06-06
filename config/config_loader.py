@@ -1,3 +1,5 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
+# config/config_loader.py
 import yaml
 import os
 from dotenv import load_dotenv

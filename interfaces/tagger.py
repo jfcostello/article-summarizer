@@ -1,3 +1,4 @@
+#!/root/.ssh/article-summarizer/as-env/bin/python3
 # interfaces/tagger.py
 # This module defines the Tagger interface for tagging summarized articles.
 
