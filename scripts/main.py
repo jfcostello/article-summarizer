@@ -10,7 +10,8 @@ def main(task=None):
     overall_start_time = datetime.now()
 
     if task == "fetch_urls":
-        manager.execute_with_redundancy('fetch_urls')
+            total_new_urls = manager.execute_with_redundancy('fetch_urls')
+            print(total_new_urls)
     elif task == "scrape_content":
         manager.execute_with_redundancy('scraper')
     elif task == "summarize_articles":

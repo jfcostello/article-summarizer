@@ -47,10 +47,23 @@ scripts_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'sc
 def fetch_urls():
     try:
         result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'fetch_urls'], capture_output=True, text=True)
-        total_new_urls = int(result.stdout.strip())
+        
+        if result.returncode == 0:  # Success
+            try:
+                total_new_urls = int(result.stdout.strip()) 
+            except ValueError:
+                # Log an error - couldn't convert output to integer
+                total_new_urls = 0  
+        else:
+            # Log an error - subprocess had a non-zero exit code
+            total_new_urls = 0
+
         if total_new_urls > 0:
             task_queue.append('execute_additional_tasks')
+        # else:  # You might want to log here if no URLs were found
+
         return total_new_urls
+
     except Exception as exc:
         return str(exc)
 
