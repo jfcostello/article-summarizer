@@ -1,0 +1,19 @@
+# System-level dependencies (Ubuntu)
+# sudo apt-get install postgrest
+# sudo apt-get install rabbitmq-server
+
+postgrest==0.16.4
+supabase==2.4.5
+feedparser==6.0.11
+python-dotenv==1.0.1
+anthropic==0.25.8
+groq==0.5.0
+pyppeteer==2.0.0
+celery==5.4.0
+kombu==5.3.7
+amqp==5.2.0
+prompt-toolkit==3.0.43
+PyYAML==6.0.1
+realtime-py==0.1.3
+regex==2024.5.10
+vine==5.1.0
