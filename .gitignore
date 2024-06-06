@@ -2,6 +2,7 @@
 legacy
 wordpress
 .DS_Store
+celerybeat-schedule.db
 
 __pycache__/
 *.pyc
