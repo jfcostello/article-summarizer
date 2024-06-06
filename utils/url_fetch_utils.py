@@ -42,31 +42,29 @@ def deduplicate_urls(new_urls, existing_urls):
     
     return deduplicated_urls   
 
-def insert_new_entries(table_name, new_entries, log_entries, batch_size=100):
+def insert_new_entries(table_name, new_entries, log_entries):
     """
-    Insert new entries into the specified table in batches.
+    Insert new entries into the specified table one by one.
     
     Args:
         table_name (str): The name of the table to insert entries into.
         new_entries (list): List of new entries to be inserted.
         log_entries (list): List to store log entries.
-        batch_size (int): The number of records to insert per batch.
     """
     inserted_count = 0
-    for i in range(0, len(new_entries), batch_size):
-        batch = new_entries[i:i + batch_size]
+    for entry in new_entries:
         try:
-            insert_response = supabase.table(table_name).insert(batch).execute()
-            inserted_count += len(insert_response.data)
-            for entry in batch:
+            insert_response = supabase.table(table_name).insert(entry).execute()
+            if insert_response.data:  # Check if data was actually inserted
+                inserted_count += 1
                 log_entries.append(f"Data inserted successfully for {entry['url']}.")
+            else:
+                log_entries.append(f"No data inserted for {entry['url']}. Response: {insert_response}")
         except Exception as e:
             if "duplicate key value violates unique constraint" in str(e):
-                for entry in batch:
-                    log_entries.append(f"Duplicate URL rejected by Supabase: {entry['url']}. Skipping insertion.")
+                log_entries.append(f"Duplicate URL rejected by Supabase: {entry['url']}. Skipping insertion.")
             else:
-                for entry in batch:
-                    log_entries.append(f"Error inserting data for {entry['url']}: {str(e)}")
+                log_entries.append(f"Error inserting data for {entry['url']}: {str(e)}")
     return inserted_count
 
 def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="script", app=None):
@@ -96,7 +94,7 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
             deduplicated_entries = deduplicate_urls(new_entries, existing_urls)
 
             if deduplicated_entries:
-                new_url_count = insert_new_entries(table_name, deduplicated_entries, log_entries)
+                new_url_count = insert_new_entries(table_name, deduplicated_entries, log_entries) # Batch size removed here
                 total_new_urls += new_url_count
                 for entry in deduplicated_entries:
                     log_entries.append(f"New entry added: {entry['url']}")
@@ -112,12 +110,6 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
 
         log_duration(script_name, start_time, datetime.now(timezone.utc))
         return total_new_urls
-
-    except Exception as e:
-        log_entries.append(f"Exception during feed processing: {e}")
-        log_status(script_name, {"messages": log_entries}, "Error")
-        log_duration(script_name, start_time, datetime.now(timezone.utc))
-        return 0
 
     except Exception as e:
         log_entries.append(f"Exception during feed processing: {e}")

@@ -39,4 +39,5 @@ class FeedparserFetcher(URLFetcher):
 if __name__ == "__main__":
     fetcher = FeedparserFetcher()
     success = fetcher.fetch_and_store_urls()
+    print(success)  # Ensure this prints an integer
     sys.exit(0 if success else 1)
