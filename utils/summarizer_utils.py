@@ -1,7 +1,6 @@
 #!/root/.ssh/article-summarizer/as-env/bin/python3
 # utils/summarizer_utils.py
-# This module provides utility functions for summarizing articles.
-# It includes functions for escaping quotes, extracting sections, and summarizing using different APIs.
+# This module provides utility functions for summarizing articles. It includes functions for escaping quotes, extracting sections from content, and summarizing articles using different APIs. The summaries are then updated in a Supabase table.
 
 import re
 import json
@@ -108,16 +107,20 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
     except Exception as e:
         status_entries.append({"message": f"Error during summarization for ID {article_id}", "error": str(e)})
 
+# Process articles for summarization and log the status and duration of the operation.
 def process_articles(script_name, api_call_func=None):
+    # Record the start time of the process.
     start_time = datetime.now(timezone.utc)
     status_entries = []
     total_items = 0
     failed_items = 0
 
+    # Load configuration and fetch articles from the database.
     config = load_config()
     articles = fetch_articles_with_logic("summarizer_flow")
     system_prompt = config['systemPrompt']
 
+    # If articles are found, summarize each one.
     if articles:
         for article in articles:
             total_items += 1
@@ -127,6 +130,7 @@ def process_articles(script_name, api_call_func=None):
     else:
         status_entries.append({"message": "No articles to summarize"})
         
+    # Log the status based on the number of failed items.
     if failed_items == 0:
         log_status(script_name, status_entries, "Success")
         task_status = "Success"
@@ -137,6 +141,7 @@ def process_articles(script_name, api_call_func=None):
         log_status(script_name, status_entries, "Error")
         task_status = "Error"
 
+    # Log the duration of the script execution.
     log_duration(script_name, start_time, datetime.now(timezone.utc))
 
     return "Success" if failed_items == 0 else "Partial" if failed_items > 0 and failed_items < total_items else "Error"

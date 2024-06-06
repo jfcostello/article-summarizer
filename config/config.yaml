@@ -1,6 +1,13 @@
-# The file that hosts the various system promps for our LLM calls
+# config/config.yaml
 
-# System prompt used for the summarizer LLM calls. User message is a scraped article in full. We're asking for the LLM to return a summary of the article in multiple parts
+# This YAML file contains system prompts for two large language model (LLM) tasks: summarization and tagging. It defines the detailed instructions for how the models should process and return their outputs. 
+# Additionally, it includes placeholders for sensitive data to be loaded from environment variables and configuration details for various interfaces used in the system.
+# Finally it also defines the hierarchy of scripts which are assigned to tasks, defining which scripts run in each order
+
+
+# The initial section refers to our system prompts for our LLM calls
+
+# Section 1 - System prompt used for the summarizer LLM calls. User message is a scraped article in full. We're asking for the LLM to return a summary of the article in multiple parts
 # IntroParagraph - a plain text brief introduction about the article
 # BulletPointSummary - a JSON object with a list of bullet points summarizing the article
 # ConcludingParagraph - a plain text brief conclusion about the article
@@ -81,12 +88,10 @@ systemPrompt: |
 
   ConcludingParagraph: Fundid's shutdown was a bittersweet experience for Sample, but it has inspired her to pursue a new path focused on empowering women to become business owners through acquiring and scaling existing profitable companies, which she believes can have a more direct and meaningful impact than the venture capital-backed startup route.
 
+# Section 2 - the system prompts for our tagging llm calls
 # We use two system prompts for our tagging LLM call. We use this so that we can insert live data from the all_tags table, which includes the tag name, public_desc which is a public facing description of the tag for frontend, and private_desc, additional instructions for how to tag and score the tag only meant for the llm. We insert that between the two prompts, and insert just the tags at the end as a reminder to the llm
-
 # The expected response is a JSON format with the tags and the scores for those tags
-
 # This currently works really poorly, but the format is consistent. It needs far far more prompt engineering, fine tuning or trying a different model to be particularly useful
-
 # Llama 3 8bs context window of 8k tokens will be a limiting factor at some point, too, if we do want to insert all tags and descriptions dynamically into the system prompt. That will add up fast
 
 systemPrompt-Tagger-1: |
@@ -149,17 +154,21 @@ systemPrompt-Tagger-2: |
 Reminder: you must pick only one of the allowed tags attached again
 
 # Placeholders for sensitive data (to be loaded from .env)
+# Placeholder for our Supabase information
 supabase:
   url: ${SUPABASE_URL}
   key: ${SUPABASE_KEY}
+# Placeholders for our LLM keys
 api_keys:
   anthropic: ${ANTHROPIC_API_KEY}
   groq: ${GROQ_API_KEY}
-  
+
+# Config information for our Celery task manager  
 celery:
   broker_url: 'pyamqp://guest@localhost//'
   result_backend: 'rpc://'
 
+# Configuration for various system interfaces, specifying the primary and fallback methods for fetching URLs, scraping, summarizing, and tagging.
 interfaces:
   fetch_urls:
     primary: fetch_urls_feedparser

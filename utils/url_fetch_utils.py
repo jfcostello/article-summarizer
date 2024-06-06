@@ -1,6 +1,6 @@
 #!/root/.ssh/article-summarizer/as-env/bin/python3
 # utils/url_fetch_utils.py
-# Utility functions for URL fetching and handling.
+# This file provides utility functions for fetching and handling URLs, specifically for processing RSS feeds (Or other sources which may be added later) and updating a database with new entries. It includes functions for fetching existing URLs from a database, deduplicating new URLs, inserting new entries, and processing feeds with logging and error handling.
 
 from utils.logging_utils import log_status, log_duration
 from datetime import datetime, timezone
@@ -68,32 +68,42 @@ def insert_new_entries(table_name, new_entries, log_entries):
                 log_entries.append(f"Error inserting data for {entry['url']}: {str(e)}")
     return inserted_count
 
+# Processes RSS feeds by fetching enabled feeds from the database, parsing them, deduplicating new entries, and inserting them into the specified table. Logs the process and returns the total count of new URLs added.
 def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="script", app=None):
+    # Records the start time for the feed processing.
     start_time = datetime.now(timezone.utc)
+    # Initializes the log entries list and counters for total items, failed items, and new URLs.
     log_entries = []
     total_items = 0
     failed_items = 0
     total_new_urls = 0
 
+    # Checks if the parse_feed function is provided, raising an error if not.
     if parse_feed is None:
         raise ValueError("A parse_feed function must be provided")
 
+    # Tries to fetch the RSS feed URLs from the database.
     try:
         rss_feeds_response = fetch_table_data("rss_feed_list", {"isEnabled": 'TRUE'})
 
+        # Logs an error if no data is found.
         if not rss_feeds_response:
             log_entries.append("Error fetching RSS feed URLs or no data found.")
             log_status(script_name, {"messages": log_entries}, "Error")
             log_duration(script_name, start_time, datetime.now(timezone.utc))
             return 0
 
+        # Iterates over each feed in the response.
         for feed in rss_feeds_response:
             feed_url = feed['rss_feed']
             new_entries = parse_feed(feed_url)
+            # Parses the feed URL to get new entries and updates the total item count.
             total_items += len(new_entries)
+            # Fetches existing URLs and deduplicates the new entries.
             existing_urls = fetch_existing_urls(table_name)
             deduplicated_entries = deduplicate_urls(new_entries, existing_urls)
 
+            # Inserts the deduplicated entries into the database.
             if deduplicated_entries:
                 new_url_count = insert_new_entries(table_name, deduplicated_entries, log_entries)
                 total_new_urls += new_url_count
@@ -104,6 +114,7 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
             else:
                 log_entries.append(f"No new URLs to add for {feed_url}.")
 
+        # Logs the overall status based on the count of failed items.
         if failed_items == 0:
             log_status(script_name, {"messages": log_entries}, "Success")
         elif failed_items > 0 and failed_items < total_items:
@@ -111,9 +122,11 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
         else:
             log_status(script_name, {"messages": log_entries}, "Error")
 
+        # Logs the duration of the feed processing.
         log_duration(script_name, start_time, datetime.now(timezone.utc))
         return total_new_urls
 
+    # Handles and logs any exceptions that occur during the process.
     except Exception as e:
         log_entries.append(f"Exception during feed processing: {e}")
         log_status(script_name, {"messages": log_entries}, "Error")

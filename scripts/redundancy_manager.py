@@ -1,5 +1,6 @@
 #!/root/.ssh/article-summarizer/as-env/bin/python3
 # scripts/redundancy_mamager.py
+# This script, redundancy_manager.py, manages the execution of tasks with redundancy by running all implementations of a task sequentially to ensure all work is handled. It loads configuration from a YAML file (It gets the scripts and their order from that file), executes scripts as subprocesses, and logs the status and duration of the tasks. The script also interacts with a Celery queue to send task statuses and trigger dependent tasks if new URLs are added.
 
 import sys
 import os

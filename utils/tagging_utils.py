@@ -94,13 +94,18 @@ def fetch_articles():
         columns=["id", "ArticleTitle", "IntroParagraph", "BulletPointSummary", "ConcludingParagraph"]
     )
 
+# Main function to process articles: fetches articles, calls LLM API to generate tags, and updates the database.
 def process_articles(script_name, primary=True, api_call_func=None):
+    # Record the start time for the process
     start_time = datetime.now(timezone.utc)
+    # Initialize lists to store status entries, total items processed, and failed items
     status_entries = []
     total_items = 0
     failed_items = 0
 
+    # Construct the system prompt using predefined tags and descriptions
     system_prompt = construct_system_prompt()
+    # Fetch articles that need to be processed
     articles = fetch_articles()
 
     if articles:
@@ -108,13 +113,17 @@ def process_articles(script_name, primary=True, api_call_func=None):
             total_items += 1
             article_id = article["id"]
             content = f"{article['ArticleTitle']} {article['IntroParagraph']} {article['BulletPointSummary']} {article['ConcludingParagraph']}"
+            # Call the LLM API to generate tags for the article
             result = api_call_func(content, system_prompt)
+            # Process the generated tags and update the database
             process_result = process_tags(article_id, result, status_entries)
+            # Check if the processing was successful and update the failed items count accordingly
             if not process_result.get("message").startswith("Tags generated and updated successfully"):
                 failed_items += 1
     else:
         status_entries.append({"message": "No articles to tag"})
 
+    # Log the status and duration of the process based on the number of failed items
     if failed_items == 0:
         log_status(script_name, status_entries, "Success")
         task_status = "Success"

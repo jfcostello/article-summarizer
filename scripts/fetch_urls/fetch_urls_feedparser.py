@@ -1,5 +1,6 @@
 #!/root/.ssh/article-summarizer/as-env/bin/python3
 # scripts/fetch_urls/fetch_urls_feedparser.py
+# This script uses the feedparser library to fetch URLs from RSS feeds. It processes these feeds and stores the URLs using utility functions, primarily for the purpose of extracting and managing RSS feed entries.
 
 import sys
 import os
@@ -40,5 +41,5 @@ class FeedparserFetcher(URLFetcher):
 if __name__ == "__main__":
     fetcher = FeedparserFetcher()
     success = fetcher.fetch_and_store_urls()
-    print(success)  # Ensure this prints an integer
+    print(success)
     sys.exit(0 if success else 1)
