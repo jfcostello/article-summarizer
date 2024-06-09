@@ -11,3 +11,5 @@ __pycache__/
 *.pyc
 # tasks, like my command to push staging into prod
 .vscode/
+# local python env
+as-env/
