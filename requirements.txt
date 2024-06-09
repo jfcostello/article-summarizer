@@ -1,5 +1,4 @@
 # System-level dependencies (Ubuntu)
-# sudo apt-get install postgrest
 # sudo apt-get install rabbitmq-server
 
 postgrest==0.16.4

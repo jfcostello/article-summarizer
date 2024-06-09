@@ -1,8 +1,13 @@
+# .env file
 .env
+# Local only folder that has pre git, first version of the code 
 legacy
-wordpress
+# Weird thing Mac inserts
 .DS_Store
+# Celery DB which will be recreated locally
 celerybeat-schedule.db
-
+# Cache
 __pycache__/
 *.pyc
+# tasks, like my command to push staging into prod
+.vscode/
