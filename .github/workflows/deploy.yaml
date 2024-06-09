@@ -33,7 +33,7 @@ jobs:
             echo "Directory exists, listing contents:"
             ls -la
             echo "Stashing any local changes..."
-            git stash push --include-untracked
+            git stash push
             echo "Pulling latest changes from origin/main..."
             git pull origin main
           else
