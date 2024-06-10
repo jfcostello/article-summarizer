@@ -36,6 +36,9 @@ def process_tags(article_id, chat_completion, status_entries):
         # Track statuses for each tag insertion
         successful_insertions = []
 
+        # Flag to track if at least one tag was inserted successfully
+        at_least_one_tag_inserted = False 
+
         for tag_data in response_json["tags"]:
             tag = tag_data["tag"]
             score = int(tag_data["score"])  # Convert the score to an integer
@@ -47,12 +50,18 @@ def process_tags(article_id, chat_completion, status_entries):
                     "score": score
                 }).execute()
                 successful_insertions.append({"tag": tag, "status": "success"})
+                at_least_one_tag_inserted = True  # Set the flag to True if insertion succeeds
             except Exception as insert_error:
-                status_entries.append({"tag": tag, "status": "failed", "error": str(insert_error)})
-                raise Exception(f"Failed to insert tag {tag} for article {article_id}: {insert_error}")
+                if "duplicate key value violates unique constraint" in str(insert_error):
+                    # Log the rejected tag, but don't raise an exception
+                    status_entries.append({"tag": tag, "status": "rejected", "error": str(insert_error)})
+                else:
+                    # Handle other errors - for now, we'll re-raise
+                    status_entries.append({"tag": tag, "status": "failed", "error": str(insert_error)})
+                    raise Exception(f"Failed to insert tag {tag} for article {article_id}: {insert_error}")
 
-        # Only update ProductionReady status if all tags were successfully inserted
-        if all(entry["status"] == "success" for entry in successful_insertions):
+        # Only update ProductionReady status if at least one tag was successfully inserted
+        if at_least_one_tag_inserted:
             supabase.table("summarizer_flow").update({"ProductionReady": True}).eq("id", article_id).execute()
 
         return {"message": f"Tags generated and updated successfully for ID {article_id}"}

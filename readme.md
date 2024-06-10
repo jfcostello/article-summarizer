@@ -389,9 +389,10 @@ The `utils` directory contains various utility modules that provide essential fu
 ##### `tagging_utils.py`
 
 -   **`process_tags(article_id, chat_completion, status_entries)`:**
-    -   Parses the JSON response from the LLM containing tags and scores for the article with the given `article_id`.
-    -   Inserts each tag and its score into the `article_tags` table.
-    -   If all tags are inserted successfully, it updates the `ProductionReady` flag to `True` in the `summarizer_flow` table.
+    -   Parses the JSON response from the LLM containing tags and scores for the article with the given article_id.
+    -   Inserts each tag and its score into the article_tags table.
+    -   If a tag insertion fails because the tag is not in the preset list, the tag is skipped (and logged), and the process continues.
+    -   If at least one tag is successfully inserted for the article, it updates the ProductionReady flag to True in the summarizer_flow table.
     -   Tracks and logs any errors during tag insertion.
 
 -   **`construct_system_prompt()`:**
