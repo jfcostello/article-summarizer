@@ -1,4 +1,3 @@
-#!/root/.ssh/article-summarizer/as-env/bin/python3
 # utils/logging_utils.py
 # This module provides utility functions for logging the status and duration of script executions
 # to a Supabase database. These functions help in tracking the performance and identifying issues

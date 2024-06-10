@@ -1,4 +1,3 @@
-#!/root/.ssh/article-summarizer/as-env/bin/python3
 # utils/url_fetch_utils.py
 # This file provides utility functions for fetching and handling URLs, specifically for processing RSS feeds (Or other sources which may be added later) and updating a database with new entries. It includes functions for fetching existing URLs from a database, deduplicating new URLs, inserting new entries, and processing feeds with logging and error handling.
 

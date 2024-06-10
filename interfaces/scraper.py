@@ -1,4 +1,3 @@
-#!/root/.ssh/article-summarizer/as-env/bin/python3
 # interfaces/scraper.py
 # This module defines the Scraper interface for scraping content from URLs.
 

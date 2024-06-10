@@ -1,4 +1,3 @@
-#!/root/.ssh/article-summarizer/as-env/bin/python3
 # config/config_loader.py
 # This file loads configuration settings for the article summarizer application from both a YAML file and environment variables. It retrieves necessary configuration details for external services such as Supabase, API keys for Anthropic and Groq, and ensures Celery configuration defaults if not explicitly set in the configuration file.
 

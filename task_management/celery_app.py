@@ -1,4 +1,3 @@
-#!/root/.ssh/article-summarizer/as-env/bin/python3
 # task_management/celery_app.py
 # This file configures a Celery application for task management, including periodic task scheduling and task execution chains - it determines when each task fires, and is responsible for triggering their execution. It defines tasks for fetching URLs, scraping content, summarizing articles, tagging articles, and managing the execution queue. The tasks are scheduled to run at specific intervals using Celery's beat scheduler.
 import sys

@@ -1,4 +1,3 @@
-#!/root/.ssh/article-summarizer/as-env/bin/python3
 # scripts/scraper/scrape_puppeteer.py
 # This script uses Pyppeteer to scrape article content from URLs stored in a Supabase database,
 # logs the scraping status and duration, and updates the database with the scraped content.

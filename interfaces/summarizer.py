@@ -1,4 +1,3 @@
-#!/root/.ssh/article-summarizer/as-env/bin/python3
 # interfaces/summarizer.py
 # This module defines the Summarizer interface for summarizing article content.
 

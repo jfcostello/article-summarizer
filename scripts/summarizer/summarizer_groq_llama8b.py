@@ -1,4 +1,3 @@
-#!/root/.ssh/article-summarizer/as-env/bin/python3
 # scripts/summarizer/summarizer_groq_llama8b.py
 # This script fetches articles from the Supabase database that have been scraped but not yet summarized,
 # uses the Groq API to generate summaries, and updates the database with the summaries. It logs both the

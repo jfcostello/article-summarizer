@@ -1,4 +1,3 @@
-#!/root/.ssh/article-summarizer/as-env/bin/python3
 # scripts/main.py
 #This script serves as the main entry point for an article summarization system. It utilizes a RedundancyManager to perform various tasks like fetching URLs, scraping content, summarizing articles, and tagging articles. The tasks can be executed individually based on command-line arguments or sequentially by default. The script logs the overall status and duration of the tasks performed. Celery_app calls this script with arguments as it's way of starting tasks and receiving their statuses
 
