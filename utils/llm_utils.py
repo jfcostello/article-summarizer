@@ -89,8 +89,10 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
 
         # Parse the response for Gemini - extracting content from 'text' field , which is nested in other fields in JSON
         try:
-            response_content = chat_completion.result.candidates[0].content.parts[0].text
+            response_content = chat_completion.candidates[0].content.parts[0].text
             return response_content
+        except (IndexError, AttributeError) as e: 
+            raise ValueError(f"Error parsing Gemini response: {e}")
         except (IndexError, AttributeError) as e: 
             raise ValueError(f"Error parsing Gemini response: {e}")
     else:
