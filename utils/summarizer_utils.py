@@ -64,15 +64,24 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
     """
     try:
         response = api_call_func(content, systemPrompt)
-        if hasattr(response, 'choices'):
+        print("Raw response:", response)
+        # Response handling logic, each llm sends back more than just the pure response, this extracts the pure response from their return
+        if "GenerateContentResponse(" in str(response):
+            start = str(response).find("text\": \"") + len("text\": \"")
+            end = str(response).find("\",\n        \"role\"")
+            response_content = str(response)[start:end]
+            print("Parsed response content:", response_content)
+            print("Parsed response content:", response_content)
+        elif hasattr(response, 'choices'): # Parse only what we need from Groqs response
             response_content = response.choices[0].message.content
-        elif hasattr(response, 'content') and isinstance(response.content, list):
+        elif hasattr(response, 'content') and isinstance(response.content, list): # Parse only what we need from Anthropics response
             structured_text = getattr(response.content[0], 'text', None)
             if structured_text:
                 response_content = structured_text
             else:
                 raise ValueError("Text attribute not found in response")
         else:
+            print("no parse:", response)
             raise ValueError("Invalid response format or empty content")
 
         intro_paragraph = extract_section(response_content, "IntroParagraph:", "BulletPointSummary:")

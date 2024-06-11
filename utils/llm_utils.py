@@ -44,5 +44,39 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
             messages=[{"role": "user", "content": content}]
         )
         return chat_completion
+    elif client_type == "gemini": 
+        from google.generativeai import GenerativeModel  # Import GenerativeModel directly
+        from google.generativeai import configure
+        from google.generativeai.types import HarmCategory, HarmBlockThreshold
+
+        configure(api_key=os.environ["GEMINI_API_KEY"])
+
+        generation_config = {
+            "temperature": temperature, 
+            "top_p": 0.95,
+            "top_k": 64,
+            "max_output_tokens": max_tokens, 
+            "response_mime_type": "text/plain",
+        }
+
+        gemini_model = GenerativeModel( 
+            model_name=model,
+            generation_config=generation_config,
+            system_instruction=systemPrompt, 
+            safety_settings={
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+        }
+        )
+
+        chat_session = gemini_model.start_chat() 
+
+        chat_completion = chat_session.send_message(content)  
+
+
+        return chat_completion 
+
     else:
         raise ValueError(f"Unsupported client type: {client_type}")
