@@ -53,7 +53,8 @@ def extract_section(content, start_key, end_key=None):
 
 def summarize_article(article_id, content, status_entries, systemPrompt, api_call_func):
     """
-    Summarize an article using a specified API call function and update the summarizer_flow table in Supabase.
+    Summarize an article using a specified API call function and update the 
+    summarizer_flow table in Supabase.
     
     Args:
         article_id (int): The ID of the article to summarize.
@@ -63,27 +64,10 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
         api_call_func (function): The function to call the specific LLM API.
     """
     try:
-        response = api_call_func(content, systemPrompt)
-        print("Raw response:", response)
-        # Response handling logic, each llm sends back more than just the pure response, this extracts the pure response from their return
-        if "GenerateContentResponse(" in str(response):
-            start = str(response).find("text\": \"") + len("text\": \"")
-            end = str(response).find("\",\n        \"role\"")
-            response_content = str(response)[start:end]
-            print("Parsed response content:", response_content)
-            print("Parsed response content:", response_content)
-        elif hasattr(response, 'choices'): # Parse only what we need from Groqs response
-            response_content = response.choices[0].message.content
-        elif hasattr(response, 'content') and isinstance(response.content, list): # Parse only what we need from Anthropics response
-            structured_text = getattr(response.content[0], 'text', None)
-            if structured_text:
-                response_content = structured_text
-            else:
-                raise ValueError("Text attribute not found in response")
-        else:
-            print("no parse:", response)
-            raise ValueError("Invalid response format or empty content")
+        # Get the parsed response content directly 
+        response_content = api_call_func(content, systemPrompt) 
 
+        # Extract sections 
         intro_paragraph = extract_section(response_content, "IntroParagraph:", "BulletPointSummary:")
         bullet_point_summary = extract_section(response_content, "BulletPointSummary:", "ConcludingParagraph:")
         bullet_point_summary = custom_escape_quotes(bullet_point_summary)

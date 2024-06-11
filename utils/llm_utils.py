@@ -1,24 +1,27 @@
 # utils/llm_utils.py
-# This module provides utility functions to interact with various LLM APIs. Instead of calling your llm in your script, just define it, and send the variables over as needed
-# Add new LLMs here as you use them, don't out them in other scripts
+# This module provides utility functions to interact with various LLM APIs. Instead of calling your llm in your script, 
+# just define it, and send the variables over as needed
+# This script also strips the response down to just the content from the LLM
+# Add new LLMs here as you use them, don't put them in other scripts
 
 import os
 
 def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, client_type="default"):
     """
-    Call a specified LLM API to summarize the content.
+    Call a specified LLM API to process the content (summarization or oitagging).
 
     Args:
-        client (object): The LLM client.
         model (str): The model to use for the LLM.
-        content (str): The content to summarize.
+        content (str): The content to be processed.
         systemPrompt (str): The system prompt for the LLM.
         max_tokens (int, optional): The maximum number of tokens. Defaults to 4000.
         temperature (int, optional): The temperature setting for the model. Defaults to 0.
-        client_type (str, optional): The type of client (e.g., 'groq', 'anthropic', 'default'). Defaults to 'default'.
+        client_type (str, optional): The type of client (e.g., 'groq', 'anthropic', 'gemini'). 
+                                     Defaults to 'default'.
 
     Returns:
-        object: The raw response content from the LLM API.
+        str or dict: The parsed response content from the LLM API. 
+                      The format depends on the LLM and the task.
     """
     if client_type == "groq":
         from groq import Groq
@@ -32,7 +35,10 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
                 {"role": "system", "content": systemPrompt}
             ]
         )
-        return chat_completion
+
+        # Parse the response for Groq
+        response_content = chat_completion.choices[0].message.content
+        return response_content
     elif client_type == "anthropic":
         from anthropic import Anthropic
         client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
@@ -43,9 +49,15 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
             system=systemPrompt,
             messages=[{"role": "user", "content": content}]
         )
-        return chat_completion
+
+        # Parse the response for Anthropic - extracting content from 'text' field
+        try:
+            response_content = chat_completion.content[0].text  # Corrected variable name 
+            return response_content
+        except (IndexError, AttributeError) as e: 
+            raise ValueError(f"Error parsing Anthropic response: {e}")
     elif client_type == "gemini": 
-        from google.generativeai import GenerativeModel  # Import GenerativeModel directly
+        from google.generativeai import GenerativeModel
         from google.generativeai import configure
         from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
@@ -75,8 +87,11 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
 
         chat_completion = chat_session.send_message(content)  
 
-
-        return chat_completion 
-
+        # Parse the response for Gemini - extracting content from 'text' field , which is nested in other fields in JSON
+        try:
+            response_content = chat_completion.result.candidates[0].content.parts[0].text
+            return response_content
+        except (IndexError, AttributeError) as e: 
+            raise ValueError(f"Error parsing Gemini response: {e}")
     else:
         raise ValueError(f"Unsupported client type: {client_type}")
