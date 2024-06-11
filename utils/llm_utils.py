@@ -93,7 +93,5 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
             return response_content
         except (IndexError, AttributeError) as e: 
             raise ValueError(f"Error parsing Gemini response: {e}")
-        except (IndexError, AttributeError) as e: 
-            raise ValueError(f"Error parsing Gemini response: {e}")
     else:
         raise ValueError(f"Unsupported client type: {client_type}")

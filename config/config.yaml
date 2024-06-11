@@ -181,6 +181,7 @@ interfaces:
     primary: summarizer_groq_llama8b
     fallbacks:
       - summarizer_claude_haiku
+      - summarizer_gemini_flash
   tagging:
     primary: tagging_groq_llama8b
     fallbacks: []
