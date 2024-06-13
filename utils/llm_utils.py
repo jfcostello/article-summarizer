@@ -103,7 +103,7 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
                 "top_k": 0,
                 "top_p": 0.95,
                 "prompt": content, 
-                "max_tokens": 4000,  
+                "max_tokens": max_tokens,  
                 "temperature": temperature,
                 "system_prompt": systemPrompt,  
                 #"length_penalty": 1,
@@ -116,6 +116,28 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
         )
 
         response_content = "".join(output) # Join the streamed output into a single string
+        return response_content
+    # elif client_type == "aimlapi":
+    # Requires subscription, commenting out for now
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=os.getenv("AIML_API_KEY"),  
+            base_url="https://api.aimlapi.com",
+        )
+
+        response = client.chat.completions.create(
+            model=model, 
+            messages=[
+                {"role": "system", "content": systemPrompt},
+                {"role": "user", "content": content},
+            ],
+            max_tokens=max_tokens,  
+            temperature=temperature, 
+        )
+
+        response_content = response.choices[0].message.content
+        print(response_content)
         return response_content
     else:
         raise ValueError(f"Unsupported client type: {client_type}")

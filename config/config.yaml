@@ -164,6 +164,8 @@ api_keys:
   groq: ${GROQ_API_KEY}
   gemini: ${GEMINI_API_KEY} 
   replicate: $(REPLICATE_API_KEY)
+  aimlapi: $(AIML_API_KEY)
+
 
 # Config information for our Celery task manager  
 celery:
