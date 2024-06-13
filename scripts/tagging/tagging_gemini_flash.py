@@ -1,4 +1,7 @@
 # scripts/tagging/tagging_gemini_flash.py
+# This script tags summarized articles using Gemini's API and calling the Flash model. It stores the results in a Supabase database.
+# It fetches articles needing tags, generates tags using a system prompt from a YAML configuration file,
+# and logs the process and duration in Supabase.
 import sys
 import os
 

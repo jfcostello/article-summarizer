@@ -7,7 +7,7 @@ from utils.logging_utils import log_status, log_duration
 from datetime import datetime
 
 # The main function that handles different tasks related to article processing
-def main(task=None):
+def main(task=None, run_all_scripts=False):
     # Initializes the redundancy manager with a configuration file
     manager = RedundancyManager('config/config.yaml')
 
@@ -29,10 +29,10 @@ def main(task=None):
         manager.execute_with_redundancy('tagging')
     # If no specific task is given via an argument, all tasks are executed sequentially
     else:
-        fetch_urls_status = manager.execute_with_redundancy('fetch_urls')
-        scraper_status = manager.execute_with_redundancy('scraper')
-        summarizer_status = manager.execute_with_redundancy('summarizer')
-        tagging_status = manager.execute_with_redundancy('tagging')
+        fetch_urls_status = manager.execute_with_redundancy('fetch_urls', run_all_scripts=run_all_scripts)
+        scraper_status = manager.execute_with_redundancy('scraper', run_all_scripts=run_all_scripts)
+        summarizer_status = manager.execute_with_redundancy('summarizer', run_all_scripts=run_all_scripts)
+        tagging_status = manager.execute_with_redundancy('tagging', run_all_scripts=run_all_scripts)
 
         # Determines the overall status based on the status of individual tasks
         if all(status == "Success" for status in [fetch_urls_status, scraper_status, summarizer_status, tagging_status]):
@@ -51,10 +51,9 @@ def main(task=None):
 
 # Entry point of the script; it takes an optional task argument from the command line
 if __name__ == "__main__":
-    # If a task argument is provided, it is passed to the main function
-    if len(sys.argv) == 2:
-        task = sys.argv[1]
-        main(task)
-    # If no task argument is provided, all tasks are executed by default
-    else:
-        main()
+    run_all_scripts = "runallscripts" in sys.argv  # Check for runallscripts argument
+    task = sys.argv[1] if len(sys.argv) >= 2 else None  # Get task argument if provided
+
+    main(task, run_all_scripts)  # Pass both task and run_all_scripts to main()
+
+

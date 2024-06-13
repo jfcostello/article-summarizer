@@ -1,4 +1,8 @@
 # scripts/tagging/tagging_togetherai_llama8b.py
+# This script tags summarized articles using Togetherai's API and calling the Llama 3 8b model. It stores the results in a Supabase database.
+# It fetches articles needing tags, generates tags using a system prompt from a YAML configuration file,
+# and logs the process and duration in Supabase.
+
 import sys
 import os
 

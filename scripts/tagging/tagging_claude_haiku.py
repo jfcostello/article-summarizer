@@ -1,4 +1,7 @@
 # scripts/tagging/tagging_claude_haiku.py
+# This script tags summarized articles using Claudes's API and calling the Haiku model. It stores the results in a Supabase database.
+# It fetches articles needing tags, generates tags using a system prompt from a YAML configuration file,
+# and logs the process and duration in Supabase.
 import sys
 import os
 
