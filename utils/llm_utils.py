@@ -94,6 +94,7 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
         except (IndexError, AttributeError) as e: 
             raise ValueError(f"Error parsing Gemini response: {e}")
     elif client_type == "replicate":
+        # Set up for replicate which can call a bunch of LLMs. Commented out some unncessary additional code it sent, but we may need it for other models
         import replicate
         client = replicate.Client(api_token=os.getenv("REPLICATE_API_KEY"))
         output = client.run(
@@ -114,8 +115,7 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
             }
         )
 
-        response_content = "".join(output)
-        print (response_content)  # Join the streamed output into a single string
+        response_content = "".join(output) # Join the streamed output into a single string
         return response_content
     else:
         raise ValueError(f"Unsupported client type: {client_type}")
