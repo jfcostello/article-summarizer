@@ -25,14 +25,9 @@
   - [Scripts (`scripts/`)](#scripts-scripts)
     - [Task-Specific Scripts](#task-specific-scripts)
       - [`fetch_urls`](#fetch_urls)
-        - [`fetch_urls_feedparser.py`](#fetch_urls_feedparserpy)
       - [`scraper`](#scraper)
-        - [`scrape_puppeteer.py`](#scrape_puppeteerpy)
       - [`summarizer`](#summarizer)
-        - [`summarizer_groq_llama8b.py`](#summarizer_groq_llama8bpy)
-        - [`summarizer_claude_haiku.py`](#summarizer_claude_haikupy)
       - [`tagging`](#tagging)
-        - [`tagging_groq_llama8b.py`](#tagging_groq_llama8bpy)
     - [Core Execution Scripts](#core-execution-scripts)
       - [`main.py`](#mainpy)
       - [`redundancy_manager.py`](#redundancy_managerpy)
@@ -303,10 +298,18 @@ The `scripts` directory is the core of the article summarization system, housing
 
 -   **`summarizer_groq_llama8b.py`:**  This script generates article summaries using the Llama 8B model via the Groq API. It fetches articles that haven't been summarized yet from the database, processes them, and updates the database with the generated summaries.
 -   **`summarizer_claude_haiku.py`:** This script is a fallback summarizer that utilizes the Claude API for generating article summaries. It follows a similar process to `summarizer_groq_llama8b.py`, fetching unsummarized articles and updating the database with summaries.
+-   **`summarizer_gemini_flash.py`:** This script generates article summaries using the Gemini Flash model via the Gemini API. It fetches articles that haven't been summarized yet from the database, processes them, and updates the database with the generated summaries.
+-   **`summarizer_togetherai_llama.py`:** This script generates article summaries using the Llama 2 70B chat model via the TogetherAI API. It fetches articles that haven't been summarized yet from the database, processes them, and updates the database with the generated summaries.
+-   **`summarizer_replicate_llama8b.py`:** This script generates article summaries using the Llama 8B Instruct model via the Replicate API. It fetches articles that haven't been summarized yet from the database, processes them, and updates the database with the generated summaries.
 
 ##### `tagging`
 
 -   **`tagging_groq_llama8b.py`:**  This script is responsible for assigning tags and scores to summarized articles using the Llama 8B model through the Groq API. It fetches summarized articles that haven't been tagged yet, processes them, and updates the database with the generated tags and scores.
+-   **`tagging_gemini_flash.py`:** This script is the primary script responsible for assigning tags and scores to summarized articles using the Gemini Flash model through the Gemini API. It fetches summarized articles that haven't been tagged yet, processes them, and updates the database with the generated tags and scores.
+-   **`tagging_togetherai_llama.py`:** This script serves as a fallback for assigning tags and scores to summarized articles, utilizing the Llama 2 70B chat model through the TogetherAI API. It operates similarly to the primary tagging script, fetching untagged summarized articles and updating the database with generated tags and scores if the primary script fails.
+-   **`tagging_replicate_llama.py`:** This script acts as another fallback for tag assignment and scoring, employing the Llama 8B Instruct model via the Replicate API. It mirrors the functionality of the previous fallback script, stepping in if the primary and previous fallback scripts encounter issues.
+-   **`tagging_claude_haiku.py`:** This script is yet another fallback option for tagging articles, leveraging the Claude API (Anthropic). It operates in the same manner as the other fallback scripts, providing an additional layer of redundancy in the tagging process.
+
 
 #### Core Execution Scripts
 
@@ -335,7 +338,7 @@ The `utils` directory contains various utility modules that provide essential fu
 #### `llm_utils.py`
 
 -   **LLM Interaction:** This module provides a function for interacting with large language model APIs:
-    -   `call_llm_api()`: A generic function to call different LLM APIs (Groq, Anthropic) based on the specified model and parameters. It handles authentication and constructs API requests, returning the raw response from the LLM.
+    -   `call_llm_api()`: A generic function to call different LLM APIs (Groq, Anthropic, Gemini, Replicate, TogetherAI) based on the specified model and parameters. It handles authentication and constructs API requests, returning the raw response from the LLM.
 
 #### Task-Specific Utilities
 
