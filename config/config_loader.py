@@ -24,7 +24,8 @@ def load_config():
     config['api_keys']['gemini'] = os.getenv('GEMINI_API_KEY')
     config['api_keys']['replicate'] = os.getenv('REPLICATE_API_KEY')
     config['api_keys']['replicate'] = os.getenv('AIML_API_KEY')
-    
+    config['api_keys']['replicate'] = os.getenv('TOGETHERAI_API_KEY')
+
     # Ensure Celery configuration is loaded
     if 'celery' in config:
         config['celery']['broker_url'] = config['celery'].get('broker_url', 'pyamqp://guest@localhost//')

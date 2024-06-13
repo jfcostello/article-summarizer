@@ -137,7 +137,28 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
         )
 
         response_content = response.choices[0].message.content
-        print(response_content)
         return response_content
+    elif client_type == "togetherai":
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=os.getenv("TOGETHERAI_API_KEY"),  
+            base_url="https://api.together.xyz/v1",
+        )
+
+        response = client.chat.completions.create(
+            model=model, 
+            messages=[
+                {"role": "system", "content": systemPrompt},
+                {"role": "user", "content": content},
+            ],
+            max_tokens=max_tokens,  
+            temperature=temperature, 
+        )
+
+        response_content = response.choices[0].message.content
+        print(response_content)
+        return response_content      
     else:
         raise ValueError(f"Unsupported client type: {client_type}")
+    
