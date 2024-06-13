@@ -41,8 +41,9 @@ class RedundancyManager:
         
         Returns:
             dict: Configuration dictionary loaded from the file.
-        """
-        with open(config_path, 'r') as file:
+        """     
+        
+        with open(config_path, 'r', encoding='utf-8') as file:
             return yaml.safe_load(file)
 
     def execute_with_redundancy(self, task_name, send_status=False, *args, **kwargs):

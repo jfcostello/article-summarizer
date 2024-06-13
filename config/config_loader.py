@@ -13,8 +13,8 @@ def load_config():
     load_dotenv()
 
     # Load configurations from config.yaml
-    with open('config/config.yaml', 'r') as file:
-        config = yaml.safe_load(file)
+    with open('config/config.yaml', 'r', encoding='utf-8') as file:
+        config = yaml.safe_load(file) 
 
     # Replace placeholders with actual values from environment variables
     config['supabase']['url'] = os.getenv('SUPABASE_URL')
