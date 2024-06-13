@@ -163,6 +163,7 @@ api_keys:
   anthropic: ${ANTHROPIC_API_KEY}
   groq: ${GROQ_API_KEY}
   gemini: ${GEMINI_API_KEY} 
+  replicate: $(REPLICATE_API_KEY)
 
 # Config information for our Celery task manager  
 celery:
@@ -180,8 +181,9 @@ interfaces:
   summarizer:
     primary: summarizer_groq_llama8b
     fallbacks:
-      - summarizer_claude_haiku
       - summarizer_gemini_flash
+      - summarizer_claude_haiku
+      - summarizer_replicate_llama
   tagging:
     primary: tagging_groq_llama8b
     fallbacks: []

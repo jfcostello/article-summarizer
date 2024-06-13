@@ -93,5 +93,29 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
             return response_content
         except (IndexError, AttributeError) as e: 
             raise ValueError(f"Error parsing Gemini response: {e}")
+    elif client_type == "replicate":
+        import replicate
+        client = replicate.Client(api_token=os.getenv("REPLICATE_API_KEY"))
+        output = client.run(
+            model,
+            input={
+                "top_k": 0,
+                "top_p": 0.95,
+                "prompt": content, 
+                "max_tokens": 4000,  
+                "temperature": temperature,
+                "system_prompt": systemPrompt,  
+                #"length_penalty": 1,
+                #"max_new_tokens": 512,  
+                #"stop_sequences": "<|end_of_text|>,<|eot_id|>",
+                #"prompt_template": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n{system_prompt}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n",
+                "presence_penalty": 0,
+                "log_performance_metrics": False
+            }
+        )
+
+        response_content = "".join(output)
+        print (response_content)  # Join the streamed output into a single string
+        return response_content
     else:
         raise ValueError(f"Unsupported client type: {client_type}")
