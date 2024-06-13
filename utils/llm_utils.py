@@ -157,7 +157,6 @@ def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, c
         )
 
         response_content = response.choices[0].message.content
-        print(response_content)
         return response_content      
     else:
         raise ValueError(f"Unsupported client type: {client_type}")
