@@ -16,17 +16,17 @@ def main(task=None, run_all_scripts=False):
 
     # Checks if the task is to fetch URLs, executes the task, and prints the result
     if task == "fetch_urls":
-            total_new_urls = manager.execute_with_redundancy('fetch_urls')
+            total_new_urls = manager.execute_with_redundancy('fetch_urls', run_all_scripts=run_all_scripts)
             print(total_new_urls)
     # Checks if the task is to scrape content and executes the task
     elif task == "scrape_content":
-        manager.execute_with_redundancy('scraper')
+        manager.execute_with_redundancy('scraper', run_all_scripts=run_all_scripts)
     # Checks if the task is to summarize articles and executes the task
     elif task == "summarize_articles":
-        manager.execute_with_redundancy('summarizer')
+        manager.execute_with_redundancy('summarizer', run_all_scripts=run_all_scripts)
     # Checks if the task is to tag articles and executes the task
     elif task == "tag_articles":
-        manager.execute_with_redundancy('tagging')
+        manager.execute_with_redundancy('tagging', run_all_scripts=run_all_scripts)
     # If no specific task is given via an argument, all tasks are executed sequentially
     else:
         fetch_urls_status = manager.execute_with_redundancy('fetch_urls', run_all_scripts=run_all_scripts)

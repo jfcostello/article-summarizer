@@ -45,19 +45,23 @@ class RedundancyManager:
         
         with open(config_path, 'r', encoding='utf-8') as file:
             return yaml.safe_load(file)
-    def execute_with_redundancy(self, task_name, send_status=False, *args, **kwargs):
+
+    def execute_with_redundancy(self, task_name, send_status=False, run_all_scripts=False, *args, **kwargs):
         """
         Execute all implementations of a task sequentially, running fallbacks only if 
         the previous implementation did not return a status of "Success"
         Any other status, or no status, results in the next script running
         If Success is returned, it runs no further scripts
+        If run_all_scripts arg is given, it runs all scripts back to back
+        regardless of status
 
         Args:
             task_name (str): Name of the task to be executed.
             send_status (bool): Whether to send statuses to Celery.
+            run_all_scripts (bool): If True, run all scripts regardless of status.
             *args: Variable length argument list for the task.
             **kwargs: Arbitrary keyword arguments for the task.
-
+            
         Returns:
             int: The total count of new URLs added by all scripts.
         """
@@ -74,7 +78,7 @@ class RedundancyManager:
         task_statuses = []
         total_new_urls = 0
 
-        # Run implementations sequentially, skipping fallbacks if the previous one succeeded
+        # Run implementations sequentially
         for impl, is_primary in implementations:
             script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts", task_name, impl + ".py")
 
@@ -82,20 +86,26 @@ class RedundancyManager:
             result = execute_script(script_path)
             task_statuses.append(result)
 
+            # Handle URL counts (for fetch_urls task)
             if isinstance(result, int):
                 total_new_urls += result
                 if result > 0:
                     self.logger.info(f"Script {impl} added {result} new URLs.")
+
+            # Log script status
             elif result == "Success":
                 self.logger.info(f"Script {impl} executed successfully.")
-                # Skip remaining implementations for this task
-                break 
             elif result == "Partial":
                 self.logger.warning(f"Script {impl} returned partial success.")
             elif result == "Error":
                 self.logger.error(f"Script {impl} failed.")
             else:  # Handle cases where no status is returned or an unexpected status
                 self.logger.error(f"Script {impl} returned an unexpected status or no status: {result}")
+
+            # Conditional break based on status and run_all_scripts flag
+            if not run_all_scripts and result == "Success":  # <-- Corrected condition
+                # Skip remaining implementations for this task ONLY if run_all_scripts is False
+                break
 
         # Determine the overall status of the task
         if "Error" in task_statuses:
