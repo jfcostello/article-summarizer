@@ -10,10 +10,6 @@ from celery import Celery, chain
 from celery.schedules import crontab
 from config.config_loader import load_config
 import subprocess
-from datetime import datetime, timedelta
-from scripts.redundancy_manager import execute_script
-from utils.url_fetch_utils import process_feeds
-from scripts.fetch_urls.fetch_urls_feedparser import FeedparserFetcher
 
 # Load the configuration settings for the Celery app
 config = load_config()
@@ -69,13 +65,13 @@ def fetch_urls():
 
         if total_new_urls > 0:
             print("DEBUG: Adding 'execute_additional_tasks' to the task queue")
-            task_queue.append('execute_additional_tasks')
+            # Add the task name as a tuple to the queue (no need to pass False)
+            task_queue.append(('execute_additional_tasks',)) 
 
-        return total_new_urls
+            return total_new_urls
 
     except Exception as exc:
         return str(exc)
-
 # Runs the scraper task, has a fall back time limit where it will cut it off if still running
 @app.task(bind=True, name='task_management.celery_app.scraper', time_limit=420, soft_time_limit=300)
 def scraper(self, *args, **kwargs):
@@ -110,9 +106,23 @@ def process_task_queue():
     print("DEBUG: process_task_queue function called.")
     if task_queue:
         print(f"DEBUG: Task queue contains: {task_queue}")
-        task_name = task_queue.pop(0)
-        if task_name == 'execute_additional_tasks':
-            execute_additional_tasks.delay() # Launch the chain
+        # Get the task data (a tuple containing the task name and arguments)
+        task_data = task_queue.pop(0)
+
+        # Unpack the task name and arguments
+        task_name, *task_args = task_data
+
+        # Construct the fully qualified task name
+        fully_qualified_task_name = f"task_management.celery_app.{task_name}"
+
+        # Retrieve the Celery task function using the fully qualified name
+        task_function = app.tasks.get(fully_qualified_task_name)
+
+        if task_function:
+            # Execute the task with the unpacked arguments
+            task_function.delay(*task_args)
+        else:
+            print(f"ERROR: Task '{task_name}' not found.")
 
 # @app.task(name='task_management.celery_app.trigger_queue_processing') # New task for manual trigger, this is for debugging
 # def trigger_queue_processing():
@@ -120,17 +130,19 @@ def process_task_queue():
 
 # Tasks that just chains the scraper, summarizer and tagging tasks together - executing them back to bakc. One task ending, with any status, triggers the next to run
 @app.task(name='task_management.celery_app.execute_additional_tasks')
-def execute_additional_tasks():
+def execute_additional_tasks(run_all_scripts=False):  # Add run_all_scripts parameter, optional
     task_chain = chain(
-        scraper.s(),
-        summarizer.s(),
-        tagging.s()
+        scraper.s(run_all_scripts=run_all_scripts),
+        summarizer.s(run_all_scripts=run_all_scripts),
+        tagging.s(run_all_scripts=run_all_scripts)
     )
     task_chain.apply_async()
 
 # Task for checking and adding 'execute_additional_tasks' to the queue if not present
 # This is temporary. We want more complex logic where it will check if it has run at all in the last x minutes, if it hasn't, add to queue, if it has, do nothing
+# Using run_all_scripts for now, so every 30 minutes we get a clean, full run with all backup scripts running
 @app.task(name='task_management.celery_app.check_execute_additional_tasks')
-def check_execute_additional_tasks():
+def check_execute_additional_tasks(run_all_scripts=False):
     if 'execute_additional_tasks' not in task_queue:
-        task_queue.append('execute_additional_tasks')
+        # Add the task name and argument as a tuple to the queue
+        task_queue.append(('execute_additional_tasks', run_all_scripts))  # Pass the run_all_scripts argument
