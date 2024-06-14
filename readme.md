@@ -338,7 +338,8 @@ The `utils` directory contains various utility modules that provide essential fu
 #### `llm_utils.py`
 
 -   **LLM Interaction:** This module provides a function for interacting with large language model APIs:
-    -   `call_llm_api()`: A generic function to call different LLM APIs (Groq, Anthropic, Gemini, Replicate, TogetherAI) based on the specified model and parameters. It handles authentication and constructs API requests, returning the raw response from the LLM.
+    -   `call_llm_api()`: A generic function to call different LLM APIs (Groq, Anthropic, Gemini, Replicate, TogetherAI) based on the specified model and parameters. It handles authentication and constructs API requests, returning the raw response from the LLM. It then parses the raw response, as the raw response often contains metadata or other elements, so we parse it to just the content from the large language model
+
 
 #### Task-Specific Utilities
 
