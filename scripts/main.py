@@ -51,9 +51,7 @@ def main(task=None, run_all_scripts=False):
 
 # Entry point of the script; it takes an optional task argument from the command line
 if __name__ == "__main__":
-    run_all_scripts = "runallscripts" in sys.argv  # Check for runallscripts argument
-    task = sys.argv[1] if len(sys.argv) >= 2 else None  # Get task argument if provided
+    run_all_scripts = "run_all_scripts" in sys.argv  # Use run_all_scripts with underscores
+    task = sys.argv[1] if len(sys.argv) >= 2 else None 
 
-    main(task, run_all_scripts)  # Pass both task and run_all_scripts to main()
-
-
+    main(task, run_all_scripts)
