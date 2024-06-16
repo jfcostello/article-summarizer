@@ -78,15 +78,6 @@ def fetch_urls(**kwargs):
 def scraper(self, *args):
     try:
         result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'scrape_content', 
-                                 *[f"{k}={v}" for k, v in kwargs.items()]], capture_output=True, text=True)
-        return result.stdout
-    except Exception as exc:
-        return str(exc)
-
-@app.task(bind=True, name='task_management.celery_app.scraper', time_limit=420, soft_time_limit=300)
-def scraper(self, *args):
-    try:
-        result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'scrape_content', 
                                  *args], capture_output=True, text=True)
         return result.stdout
     except Exception as exc:
@@ -143,9 +134,9 @@ def process_task_queue():
 @app.task(name='task_management.celery_app.execute_additional_tasks')
 def execute_additional_tasks(*args):
     task_chain = chain(
-        scraper.s(),
-        summarizer.s(),
-        tagging.s(),
+        scraper.s(*args), 
+        summarizer.s(*args),
+        tagging.s(*args),
     )
     task_chain.apply_async(args=args)
 
