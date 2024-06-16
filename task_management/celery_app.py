@@ -50,12 +50,10 @@ scripts_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'sc
 # Runs the fetch_urls task. Looks for a return saying how many URLs were added. 
 # If none, do nothing, if 1 or more, add execute_additional_tasks to the queue
 @app.task(name='task_management.celery_app.fetch_urls')
-def fetch_urls(**kwargs):  # Accept keyword arguments
+def fetch_urls(**kwargs):
     try:
-        # Pass run_all_scripts to main.py (it will default to False if not provided)
-        run_all_scripts = kwargs.get('run_all_scripts', False)
         result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'fetch_urls', 
-                                str(run_all_scripts)], capture_output=True, text=True)
+                                 *[f"{k}={v}" for k, v in kwargs.items()]], capture_output=True, text=True)
         
         if result.returncode == 0:  # Success
             try:
@@ -76,38 +74,38 @@ def fetch_urls(**kwargs):  # Accept keyword arguments
     except Exception as exc:
         return str(exc)
 
-# Runs the scraper task, has a fall back time limit where it will cut it off if still running
 @app.task(bind=True, name='task_management.celery_app.scraper', time_limit=420, soft_time_limit=300)
-def scraper(self, **kwargs):  # Accept keyword arguments
+def scraper(self, *args):
     try:
-        # Pass run_all_scripts to main.py
-        run_all_scripts = kwargs.get('run_all_scripts', False)
         result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'scrape_content', 
-                                str(run_all_scripts)], capture_output=True, text=True)
+                                 *[f"{k}={v}" for k, v in kwargs.items()]], capture_output=True, text=True)
         return result.stdout
     except Exception as exc:
         return str(exc)
 
-# Runs the summarizer task, has a fall back time limit where it will cut it off if still running
+@app.task(bind=True, name='task_management.celery_app.scraper', time_limit=420, soft_time_limit=300)
+def scraper(self, *args):
+    try:
+        result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'scrape_content', 
+                                 *args], capture_output=True, text=True)
+        return result.stdout
+    except Exception as exc:
+        return str(exc)
+
 @app.task(bind=True, name='task_management.celery_app.summarizer', time_limit=420, soft_time_limit=300)
-def summarizer(self, **kwargs):  # Accept keyword arguments
+def summarizer(self, *args):
     try:
-        # Pass run_all_scripts to main.py
-        run_all_scripts = kwargs.get('run_all_scripts', False)
         result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'summarize_articles', 
-                                str(run_all_scripts)], capture_output=True, text=True)
+                                 *args], capture_output=True, text=True)
         return result.stdout
     except Exception as exc:
         return str(exc)
 
-# Runs the tagging task, has a fall back time limit where it will cut it off if still running
 @app.task(bind=True, name='task_management.celery_app.tagging', time_limit=420, soft_time_limit=300)
-def tagging(self, **kwargs):  # Accept keyword arguments
+def tagging(self, *args):
     try:
-        # Pass run_all_scripts to main.py
-        run_all_scripts = kwargs.get('run_all_scripts', False)
         result = subprocess.run([sys.executable, os.path.join(scripts_path, 'main.py'), 'tag_articles', 
-                                str(run_all_scripts)], capture_output=True, text=True)
+                                 *args], capture_output=True, text=True)
         return result.stdout
     except Exception as exc:
         return str(exc)
@@ -143,19 +141,19 @@ def process_task_queue():
 
 # Tasks that just chains the scraper, summarizer and tagging tasks together - executing them back to bakc. One task ending, with any status, triggers the next to run
 @app.task(name='task_management.celery_app.execute_additional_tasks')
-def execute_additional_tasks(run_all_scripts=False):
+def execute_additional_tasks(*args):
     task_chain = chain(
-        scraper.s(run_all_scripts=run_all_scripts),
-        summarizer.s(run_all_scripts=run_all_scripts),
-        tagging.s(run_all_scripts=run_all_scripts)
+        scraper.s(),
+        summarizer.s(),
+        tagging.s(),
     )
-    task_chain.apply_async()
+    task_chain.apply_async(args=args)
 
 # Task for checking and adding 'execute_additional_tasks' to the queue if not present
 # This is temporary. We want more complex logic where it will check if it has run at all in the last x minutes, if it hasn't, add to queue, if it has, do nothing
 # Using run_all_scripts for now, so every 30 minutes we get a clean, full run with all backup scripts running
 @app.task(name='task_management.celery_app.check_execute_additional_tasks')
-def check_execute_additional_tasks(run_all_scripts=False):
+def check_execute_additional_tasks():
     if 'execute_additional_tasks' not in task_queue:
-        # Add the task name and arguments as a tuple to the queue
-        task_queue.append(('execute_additional_tasks', run_all_scripts))
+        # Add the task name and any arguments as a tuple to the queue
+        task_queue.append(('execute_additional_tasks', 'run_all_scripts'))
