@@ -13,3 +13,5 @@ __pycache__/
 .vscode/
 # local python env
 as-env/
+# Folder where I store context purely for CursorAI
+.cursorai/
