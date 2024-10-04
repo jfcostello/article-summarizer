@@ -2,6 +2,7 @@
 
 ## Table of contents
 
+- [Overview](#overview)
 - [Scenario: Fetching URLs from RSS feeds](#scenario-fetching-urls-from-rss-feeds)
 - [Scenario: Scraping content from fetched URLs](#scenario-scraping-content-from-fetched-urls)
 - [Scenario: Summarizing scraped content](#scenario-summarizing-scraped-content)
@@ -11,6 +12,18 @@
 - [Scenario: Deduplicating URLs](#scenario-deduplicating-urls)
 - [Scenario: Logging script performance](#scenario-logging-script-performance)
 - [Scenario: Logging task performance](#scenario-logging-task-performance)
+
+## Overview
+
+- Every 2 minutes, the system will fetch new URLs from all enabled RSS feeds and store them in the database
+- If new URLs are found, the system will scrape the content from each URL, summarize the content, tag the article, and store the results in the database
+- Every 30 minutes, the system will perform a full sweep of all tasks (URL fetching, scraping, summarizing, and tagging) even if nothing new is found
+- If any script in the task logs a 'success' status, the task should log 'success'
+- If there is no 'success' status, but a 'partial' status is recorded, the task should log 'partial'
+- If there is no 'success' or 'partial' status, the task should log 'error'
+- For each task, there is a list of scripts that are queued to run
+- It will run each script in a row until the first 'success' status is logged, at which point it will not run any further scripts for that task
+- If a script logs a 'partial' or 'error'status, the task will continue to the next script in the queue
 
 ## Scenario: Fetching URLs from RSS feeds
 
