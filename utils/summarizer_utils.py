@@ -82,19 +82,31 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
 
         concluding_paragraph = extract_section(response_content, "ConcludingParagraph:")
 
-        # Prepare data for update, always mark as summarized, but only update bulletpointsummary if json is valid
+        # Prepare data for update
         update_data = {
             "IntroParagraph": intro_paragraph,
-            "ConcludingParagraph": concluding_paragraph,
-            "summarized": True  # Always mark as summarized
+            "ConcludingParagraph": concluding_paragraph
         }
+
         if valid_json:
             update_data["BulletPointSummary"] = bullet_point_summary
+            update_data["summarized"] = True  # Only mark as summarized if JSON is valid
 
-        # Perform the update
-        supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
-
-        status_entries.append({"message": f"Summary updated successfully for ID {article_id}"})
+        # Perform the update and handle potential errors
+        try:
+            supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
+            if valid_json:
+                status_entries.append({"message": f"Summary updated successfully for ID {article_id}"})
+            else:
+                status_entries.append({"message": f"Summary updated without BulletPointSummary for ID {article_id}"})
+        except Exception as update_error:
+            # If the update fails, do not mark as summarized and log the error
+            status_entries.append({
+                "message": f"Error updating summary for ID {article_id}",
+                "error": str(update_error)
+            })
+            # Optionally, you can set 'summarized' to False explicitly if needed
+            # supabase.table("summarizer_flow").update({"summarized": False}).eq("id", article_id).execute()
 
     except Exception as e:
         status_entries.append({"message": f"Error during summarization for ID {article_id}", "error": str(e)})
