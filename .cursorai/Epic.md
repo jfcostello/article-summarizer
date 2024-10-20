@@ -1,0 +1,99 @@
+**Overview:**
+- We aim to develop a comprehensive automated testing suite for our Article Summarization System to ensure reliability, maintainability, and high-quality deployments. Given the critical nature of the system and the absence of dedicated QA resources, our focus is on creating thorough tests that cover all aspects of the system's functionality. This epic encompasses setting up the testing environment, translating BDD scenarios into executable tests, implementing unit and integration tests, handling external dependencies through mocks and fixtures, and integrating the testing suite into our continuous integration pipeline.
+**Background:**
+- The Article Summarization System automates the process of fetching, processing, summarizing, tagging, and storing news articles from various RSS feeds. It involves several components:
+  - - **Fetching URLs:** Retrieves new article URLs from enabled RSS feeds listed in the Supabase database.
+  - - **Scraping Content:** Extracts the main content of the articles from the fetched URLs.
+  - - **Summarization:** Uses Large Language Models (LLMs) to generate summaries of the scraped content.
+  - - **Tagging:** Assigns relevant tags and scores to the summarized articles for better categorization and retrieval.
+  - - **Data Storage:** Uses Supabase (a PostgreSQL database with a restful API) to store data and logs.
+  - - **Task Management:** Utilizes Celery for task scheduling and orchestration, ensuring tasks run at specified intervals and handling dependencies.
+- The system is designed with redundancy and fallback mechanisms to enhance reliability, with primary and fallback scripts defined for critical tasks.
+**Objective:**
+- To build an automated testing suite that thoroughly validates the system's functionality as specified in the BDD (Behavior-Driven Development) documentation. The testing suite should:
+- - Ensure all BDD scenarios are covered by executable tests.
+- - Validate both the happy paths and edge cases, including error handling and fallback mechanisms.
+- - Provide confidence in the code quality before deployment by catching defects early.
+- - Be maintainable and extensible for future code changes.
+- - Integrate smoothly with our development workflow and continuous integration pipeline.
+**Scope of Work:**
+- 1. **Set Up Testing Environment and Configuration:**
+  - - Create separate testing configuration files (`test_config.yaml`, `.env.test`) to isolate the test environment from production.
+  - - Configure testing databases in Supabase, mirroring production schemas but using test-specific tables (e.g., `summarizer_flow_test`).
+  - - Ensure environment variables and API keys point to test instances or use mock values.
+- 2. **Implement Mocks and Fixtures:**
+  - - Mock external LLM API calls (Groq, Anthropic, Gemini, etc.) to simulate predictable responses and error conditions.
+  - - Mock Supabase interactions or use test-specific databases to prevent affecting production data.
+  - - Configure Celery to run synchronously in tests, possibly using an in-memory broker.
+  - - Develop fixtures to set up and tear down test data, ensuring tests are isolated and repeatable.
+- 3. **Translate BDD Scenarios into Gherkin Feature Files:**
+  - - Use the BDD.md document to create Gherkin `.feature` files for each scenario, capturing the Given-When-Then structure.
+  - - Organize feature files logically, grouping related scenarios together.
+- 4. **Implement Step Definitions for BDD Tests:**
+  - - Write Python functions corresponding to each step in the feature files using the Behave framework.
+  - - Map steps to actual codebase functionality or mocked behaviors.
+  - - Include assertions to validate that the system behaves as expected at each step.
+- 5. **Develop Unit Tests for Utility Functions:**
+  - - Write unit tests for modules in the `utils/` directory (e.g., `db_utils.py`, `llm_utils.py`) using Pytest.
+  - - Ensure tests cover various inputs, including edge cases and error conditions.
+  - - Achieve high code coverage for critical utility functions.
+- 6. **Implement Integration Tests for Full Pipeline Execution:**
+  - - Write tests that simulate the end-to-end process, from fetching URLs to tagging articles.
+  - - Use predefined test data and assertions to validate the outputs at each stage.
+  - - Ensure integration tests run in isolation and do not depend on external systems.
+- 7. **Test Error Handling and Fallback Mechanisms:**
+  - - Simulate failures (e.g., API timeouts, database errors) to test the system's redundancy and fallback logic.
+  - - Verify that the system logs errors appropriately and continues operation using fallback scripts.
+  - - Ensure compliance with error handling as specified in the BDD scenarios.
+- 8. **Verify Logging and Performance Metrics:**
+  - - Test that the system correctly logs status updates and execution durations to the `log_script_status` and `log_script_duration` tables.
+  - - Validate that logs contain accurate and complete information for both successful operations and errors.
+- 9. **Test Deduplication Logic:**
+  - - Provide test data with duplicate URLs to ensure the system correctly identifies and skips duplicates.
+  - - Confirm that duplicates are not processed and that appropriate logs are generated without causing errors.
+- 10. **Integrate Testing Suite into Continuous Integration Pipeline:**
+  - - Configure the CI environment to run automated tests on commits and pull requests.
+  - - Ensure that test results are reported, and builds fail if tests do not pass.
+  - - Automate code coverage reporting and enforce minimum coverage thresholds.
+- 11. **Document Testing Procedures and Guidelines:**
+  - - Create a `TESTING.md` file that provides detailed instructions on setting up, running, and extending the test suite.
+  - - Include best practices for writing new tests and guidelines for maintaining the testing suite.
+### **Acceptance Criteria**
+- 1. **Testing Environment and Configuration:**
+  - - Separate test configuration files are created, and the test environment is fully isolated from production.
+  - - Testing databases are set up in Supabase with schemas identical to production but using test-specific tables.
+  - - Documentation exists on how to set up and run tests using the new configurations.
+- 2. **Mocks and Fixtures Implemented:**
+  - - External dependencies (LLM APIs, Supabase interactions) are mocked in the test environment.
+  - - Tests can simulate both normal responses and error conditions from external services.
+  - - Fixtures are provided to manage test data setup and teardown, ensuring test isolation.
+- 3. **BDD Scenarios Translated and Implemented:**
+  - - All scenarios from the BDD.md are converted into Gherkin feature files.
+  - - Step definitions are written for all steps, correctly invoking codebase functions or mocks.
+  - - BDD tests cover all specified behaviors, including edge cases and error handling.
+- 4. **Unit and Integration Tests Developed:**
+  - - Unit tests are written for all utility functions, achieving high code coverage (aim for 90%+ on these modules).
+  - - Integration tests simulate the full pipeline and validate outputs at each stage.
+  - - Tests are passing and can be run repeatedly with consistent results.
+- 5. **Error Handling and Fallbacks Tested:**
+  - - Tests simulate various failure scenarios to verify that the system's redundancy mechanisms work as intended.
+  - - Error logs are correctly generated, and fallback scripts are triggered accordingly.
+  - - The system continues to operate correctly despite simulated failures.
+- 6. **Logging and Metrics Verification:**
+  - - Tests confirm that status logs and execution durations are recorded accurately in the test databases.
+  - - Both successful operations and errors are logged with appropriate details.
+  - - Logs meet the specifications outlined in the BDD scenarios.
+- 7. **Deduplication Logic Validated:**
+  - - Tests provide duplicate URLs and confirm that the system skips duplicates without processing them.
+  - - Appropriate logs indicate that duplicates were identified and skipped.
+  - - No errors are caused by duplicate data.
+- 8. **CI Integration Completed:**
+  - - The continuous integration pipeline runs the automated tests on commits and pull requests.
+  - - Builds fail if tests do not pass, enforcing code quality standards.
+  - - Code coverage reports are generated, and minimum thresholds are enforced.
+- 9. **Documentation Provided:**
+  - - A comprehensive `TESTING.md` document exists, outlining how to set up the test environment, run tests, and write new tests.
+  - - Guidelines and best practices for maintaining the testing suite are included.
+  - - Documentation is clear and helpful for both current and future developers.
+**Summary:**
+- Successfully completing this epic will result in a robust automated testing suite that thoroughly validates the Article Summarization System against its specified behaviors. This will enhance our ability to maintain high code quality, facilitate safer deployments, and ensure the system operates reliably, even without dedicated QA resources. The testing suite will be an integral part of our development workflow, providing confidence in the system's functionality and supporting future growth and enhancements.
