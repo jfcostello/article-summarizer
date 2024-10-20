@@ -1,0 +1,22 @@
+
+- [ ] Set Up Testing Environment, Configuration Files, and Testing Tables #Sub-Task
+  - [ ]  #tasklist
+    - [ ] - **Set Up Testing Tables in Supabase:** #Sub-Task
+      - - Create dummy tables (e.g., `summarizer_flow_test`, `rss_feed_list_test`) mirroring production tables.
+      - - Ensure schemas, indexes, and constraints are identical to production.
+    - [ ] - **Create Separate Test Configuration Files:** #Sub-Task
+      - - Develop `test_config.yaml` and `.env.test` to isolate test settings from production.
+    - [ ] - **Configure Test Environment Variables:** #Sub-Task
+      - - Include test API keys and Supabase URLs pointing to test instances.
+    - [ ] - **Isolate Test Environment:** #Sub-Task
+      - - Configure all tests to interact only with the test environment and data.
+  - #### **Acceptance Criteria:**
+    - - `test_config.yaml` and `.env.test` files are created with appropriate test settings.
+    - - All necessary testing tables are created in Supabase, mirroring production tables.
+    - - Test environment is fully isolated; running tests has no effect on production data.
+    - - Documentation is provided detailing how to set up and run tests using the new configuration files.
+    - - Developers can run tests locally without impacting production environments.
+  - **Code Files Needed:**
+    - - `config/config.yaml`
+    - - `.env`
+    - - `config/config_loader.py`
