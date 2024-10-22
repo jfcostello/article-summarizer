@@ -1,0 +1,49 @@
+# config/test/test_config.yaml
+
+# This YAML file contains test-specific configuration settings for the article summarizer application.
+# It mirrors the structure of the production config.yaml but points to test-specific resources.
+
+# System prompts for LLM tasks remain the same as production unless specific test prompts are needed.
+
+# Placeholder for our Supabase test information
+supabase:
+  url: ${SUPABASE_TEST_URL}
+  key: ${SUPABASE_TEST_KEY}
+
+# Placeholders for our LLM keys (use test keys if available)
+api_keys:
+  anthropic: ${ANTHROPIC_TEST_API_KEY}
+  groq: ${GROQ_TEST_API_KEY}
+  gemini: ${GEMINI_TEST_API_KEY}
+  replicate: ${REPLICATE_TEST_API_KEY}
+  aimlapi: ${AIML_TEST_API_KEY}
+  togetherai: ${TOGETHERAI_TEST_API_KEY}
+
+# Config information for our Celery task manager (use test broker and backend if needed)
+celery:
+  broker_url: 'pyamqp://guest@localhost//'
+  result_backend: 'rpc://'
+
+# Configuration for various system interfaces, specifying the primary and fallback methods for testing.
+interfaces:
+  fetch_urls:
+    primary: fetch_urls_feedparser
+    fallbacks: []
+  scraper:
+    primary: scrape_puppeteer
+    fallbacks: []
+  summarizer:
+    primary: summarizer_groq_llama8b
+    fallbacks:
+      - summarizer_gemini_flash
+      - summarizer_replicate_llama8b
+      - summarizer_togetherai_llama8b
+      - summarizer_claude_haiku
+  tagging:
+    primary: tagging_gemini_flash
+    fallbacks: 
+      - tagging_groq_llama8b 
+      - tagging_replicate_llama8b
+      - tagging_togetherai_llama8b
+      - tagging_claude_haiku
+

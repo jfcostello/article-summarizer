@@ -1,9 +1,11 @@
 
 - [ ] Set Up Testing Environment, Configuration Files, and Testing Tables #Sub-Task
   - [ ]  #tasklist
-    - [ ] - **Set Up Testing Tables in Supabase:** #Sub-Task
+    - [X] - **Set Up Testing Tables in Supabase:** #Sub-Task
       - - Create dummy tables (e.g., `summarizer_flow_test`, `rss_feed_list_test`) mirroring production tables.
       - - Ensure schemas, indexes, and constraints are identical to production.
+      Result
+      - - Tables have been set up, identical to the current tables but with _testing at the end, eg summarizer_flow_test
     - [ ] - **Create Separate Test Configuration Files:** #Sub-Task
       - - Develop `test_config.yaml` and `.env.test` to isolate test settings from production.
     - [ ] - **Configure Test Environment Variables:** #Sub-Task
