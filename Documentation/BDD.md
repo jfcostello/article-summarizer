@@ -63,6 +63,8 @@
 
 - Then the system should use the configured LLM to summarize each article
 
+- The system should check the bullet point summary to ensure it is proper JSON, and show an error if it is not
+
 - And store the summary (intro paragraph, bullet points, and concluding paragraph) in the Supabase database summarizer_flow table
 
 - And mark the article as summarized in the Supabase database summarizer_flow table
