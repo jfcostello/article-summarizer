@@ -684,6 +684,12 @@ To ensure the reliability and maintainability of the Article Summarization Syste
      APP_ENV=testing
      SUPABASE_URL=<your_test_supabase_url>
      SUPABASE_KEY=<your_test_supabase_key>
+     ANTHROPIC_API_KEY=<your_test_anthropic_api_key>
+     GROQ_API_KEY=<your_test_groq_api_key>
+     GEMINI_API_KEY=<your_test_gemini_api_key>
+     REPLICATE_API_KEY=<your_test_replicate_api_key>
+     AIML_API_KEY=<your_test_aiml_api_key>
+     TOGETHERAI_API_KEY=<your_test_togetherai_api_key>
      ```
 
 2. **Configuration Files:**
@@ -697,15 +703,39 @@ To ensure the reliability and maintainability of the Article Summarization Syste
        ```
      - **Using `.env.test`:** Ensure your test scripts or CI pipeline loads the `.env.test` file.
 
-4. **Running Tests:**
-   - Use your preferred test runner (e.g., `pytest`, `unittest`) to execute tests. Ensure that the test environment is active by verifying the `APP_ENV` variable.
-   - Example command:
-     ```bash
-     pytest
+4. **Directory Structure:**
+   - Ensure your project has a `tests` directory structured as follows:
+     ```
+     ── tests/
+         ├── __init__.py
+         ├── conftest.py
+         ├── mocks/
+         │   ├── __init__.py
+         │   └── mock_llm.py
+         └── test_summarizer_utils.py
      ```
 
-5. **Isolated Testing:**
-   - The testing environment is fully isolated from production. All tests interact with test-specific Supabase tables and configurations, ensuring no impact on production data.
+5. **Mocking External Dependencies:**
+   - The `mock_llm.py` file contains mock functions for simulating LLM API responses. These mocks are used to test the system's behavior without making real API calls.
+
+6. **Pytest Fixtures:**
+   - The `conftest.py` file defines fixtures that apply these mocks across multiple test cases, ensuring consistency and reducing redundancy.
+
+7. **Running Tests:**
+   - Use Pytest to run your tests. Ensure you are in the root directory of your project and execute the following command:
+     ```bash
+     pytest tests/
+     ```
+
+8. **Expected Test Behavior:**
+   - Tests are designed to simulate various scenarios, including successful API responses, errors, and edge cases. Ensure that your tests are set up to expect these conditions.
+
+9. **Troubleshooting:**
+   - If you encounter import errors, ensure that all directories have an `__init__.py` file and that you are running tests from the correct directory.
+   - Use the `PYTHONPATH` environment variable if necessary to ensure the correct path is set:
+     ```bash
+     PYTHONPATH=. pytest tests/
+     ```
 
 ### Additional Notes
 

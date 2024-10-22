@@ -1,24 +1,22 @@
+Implement Mocks and Fixtures to Control Test Conditions
 
-- [ ] Set Up Testing Environment, Configuration Files, and Testing Tables #Sub-Task
-  - [ ]  #tasklist
-    - [X] - **Set Up Testing Tables in Supabase:** #Sub-Task
-      - - Create dummy tables (e.g., `summarizer_flow_test`, `rss_feed_list_test`) mirroring production tables.
-      - - Ensure schemas, indexes, and constraints are identical to production.
-      Result
-      - - Tables have been set up, identical to the current tables but with _testing at the end, eg summarizer_flow_test
-    - [x] - **Create Separate Test Configuration Files:** #Sub-Task
-      - - Develop `test_config.yaml` to isolate test settings from production.
-    - [x] - **Configure Test Environment Variables:** #Sub-Task
-      - - Include test API keys and Supabase URLs pointing to test instances.
-    - [ ] - **Isolate Test Environment:** #Sub-Task
-      - - Configure all tests to interact only with the test environment and data.
-  - #### **Acceptance Criteria:**
-    - - `test_config.yaml` and `.env.test` files are created with appropriate test settings.
-    - - All necessary testing tables are created in Supabase, mirroring production tables.
-    - - Test environment is fully isolated; running tests has no effect on production data.
-    - - Documentation is provided detailing how to set up and run tests using the new configuration files.
-    - - Developers can run tests locally without impacting production environments.
-  - **Code Files Needed:**
-    - - `config/config.yaml`
-    - - `.env`
-    - - `config/config_loader.py`
+[ ] - **Mock External LLM API Calls:**
+- - Use `unittest.mock` or `responses` library to mock LLM API calls (Groq, Anthropic, Gemini, etc.).
+- - Simulate various API responses, including normal responses and errors.
+[ ] - **Mock Supabase Interactions:**
+- - Configure tests to use the testing tables.
+- - Use mocking or a test database instance to prevent interaction with production data.
+[ ] - **Configure Celery for Testing:**
+- - Set Celery to run tasks synchronously in testing mode.
+- - Use an in-memory broker like `memory` for fast execution.
+[ ] - **Implement Fixtures:**
+- - Use Pytest fixtures or Behave’s `before_scenario` and `after_scenario` hooks.
+- - Set up initial state before tests and clean up after tests.
+[ ] - **Control Test Conditions:**
+- - Ensure tests can simulate different scenarios by controlling external dependencies.
+#### **Acceptance Criteria:**
+- - All external dependencies (LLM APIs, Supabase, Celery) are mocked in the test environment.
+- - Fixtures are in place to set up and tear down test data for each test.
+- - Tests run in isolation without affecting external systems or production data.
+- - Tests can simulate different responses and errors from LLM APIs.
+- - Documentation is provided on how mocks and fixtures are implemented and how to extend them.
