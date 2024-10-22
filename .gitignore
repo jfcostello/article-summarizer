@@ -1,5 +1,6 @@
 # .env file
 .env
+.env.test
 # Local only folder that has pre git, first version of the code 
 legacy
 # Weird thing Mac inserts

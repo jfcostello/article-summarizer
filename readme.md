@@ -68,6 +68,9 @@
     - [Summarizing Articles](#summarizing-articles)
     - [Tagging Articles](#tagging-articles)
   - [Debugging Tips](#debugging-tips)
+- [Testing Environment](#testing-environment)
+  - [Setting Up the Testing Environment](#setting-up-the-testing-environment)
+  - [Additional Notes](#additional-notes)
 
 ## System Overview
 
@@ -371,7 +374,7 @@ The `utils` directory contains various utility modules that provide essential fu
 
 ##### `summarizer_utils.py`
 
--   **`custom_escape_quotes(json_str)`:** 
+-   **custom_escape_quotes(json_str)`:** 
     -   Ensures that quotes within JSON strings are properly escaped (e.g., replacing double quotes with `\"`) to avoid errors during JSON parsing. This is particularly important for the `BulletPointSummary` field, which is stored as JSON in the database.
 
 -   **`extract_section(content, start_key, end_key=None)`:**
@@ -662,9 +665,51 @@ This section provides guidance on troubleshooting common issues and errors you m
 
 ### Debugging Tips
 
--   **Enable Debug Logging:** Increase the log level to `DEBUG` in Celery and other scripts to get more detailed information about the execution flow and potential issues.
+-   **Enable Debug Logging:** Increase the log level to `DEBUG in Celery and other scripts to get more detailed information about the execution flow and potential issues.
 -   **Use a Debugger:** If you encounter complex errors, use a Python debugger like `pdb` or an IDE's debugging tools to step through the code and identify the problem.
 -   **Isolate Components:** Try isolating the problematic task by manually running it with specific inputs. This can help narrow down the source of the error.
 -   **Check Dependencies:** Ensure that all required libraries and dependencies are correctly installed and up-to-date.
 
 If you encounter any persistent issues, consider seeking assistance from the development team or community forums.
+
+## Testing Environment
+
+To ensure the reliability and maintainability of the Article Summarization System, a comprehensive testing environment has been set up. This environment allows developers to run tests without affecting production data.
+
+### Setting Up the Testing Environment
+
+1. **Environment Variables:**
+   - Ensure that you have a `.env.test` file in your project root. This file should contain environment variables specific to the testing environment, including:
+     ```plaintext
+     APP_ENV=testing
+     SUPABASE_URL=<your_test_supabase_url>
+     SUPABASE_KEY=<your_test_supabase_key>
+     ```
+
+2. **Configuration Files:**
+   - The `test_config.yaml` file contains configurations specific to the testing environment. Ensure this file is correctly set up with test-specific table names and settings.
+
+3. **Switching to the Test Environment:**
+   - To run your application or tests in the test environment, set the `APP_ENV` variable to `testing`. This can be done in several ways:
+     - **Command Line:**
+       ```bash
+       export APP_ENV=testing
+       ```
+     - **Using `.env.test`:** Ensure your test scripts or CI pipeline loads the `.env.test` file.
+
+4. **Running Tests:**
+   - Use your preferred test runner (e.g., `pytest`, `unittest`) to execute tests. Ensure that the test environment is active by verifying the `APP_ENV` variable.
+   - Example command:
+     ```bash
+     pytest
+     ```
+
+5. **Isolated Testing:**
+   - The testing environment is fully isolated from production. All tests interact with test-specific Supabase tables and configurations, ensuring no impact on production data.
+
+### Additional Notes
+
+- **Mocks and Fixtures:** The testing suite uses mocks and fixtures to simulate external dependencies and manage test data setup and teardown.
+- **Continuous Integration:** The testing suite is integrated into the CI pipeline, ensuring that tests are automatically run on commits and pull requests.
+
+By following these steps, you can effectively use the testing environment to validate the functionality of the Article Summarization System without affecting production data.

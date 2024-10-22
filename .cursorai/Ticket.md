@@ -6,9 +6,9 @@
       - - Ensure schemas, indexes, and constraints are identical to production.
       Result
       - - Tables have been set up, identical to the current tables but with _testing at the end, eg summarizer_flow_test
-    - [ ] - **Create Separate Test Configuration Files:** #Sub-Task
-      - - Develop `test_config.yaml` and `.env.test` to isolate test settings from production.
-    - [ ] - **Configure Test Environment Variables:** #Sub-Task
+    - [x] - **Create Separate Test Configuration Files:** #Sub-Task
+      - - Develop `test_config.yaml` to isolate test settings from production.
+    - [x] - **Configure Test Environment Variables:** #Sub-Task
       - - Include test API keys and Supabase URLs pointing to test instances.
     - [ ] - **Isolate Test Environment:** #Sub-Task
       - - Configure all tests to interact only with the test environment and data.
