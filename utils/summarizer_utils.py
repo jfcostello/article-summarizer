@@ -14,6 +14,9 @@ from task_management.celery_app import app
 # Initialize Supabase client using environment variables
 supabase = get_supabase_client()
 
+config = load_config()
+table_names = config.get('tables', {})
+
 def custom_escape_quotes(json_str):
     """
     Correctly escape quotes inside JSON string values, avoiding double escaping.
@@ -64,16 +67,13 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
         api_call_func (function): The function to call the specific LLM API.
     """
     try:
-        # Get the parsed response content directly 
-        response_content = api_call_func(content, systemPrompt) 
-
-        # Extract sections 
+        response_content = api_call_func(content, systemPrompt)
         intro_paragraph = extract_section(response_content, "IntroParagraph:", "BulletPointSummary:")
         bullet_point_summary = extract_section(response_content, "BulletPointSummary:", "ConcludingParagraph:")
         bullet_point_summary = custom_escape_quotes(bullet_point_summary)
 
         try:
-            json.loads(bullet_point_summary)  # Validate JSON
+            json.loads(bullet_point_summary)
             valid_json = True
         except json.JSONDecodeError:
             valid_json = False
@@ -82,7 +82,6 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
 
         concluding_paragraph = extract_section(response_content, "ConcludingParagraph:")
 
-        # Prepare data for update
         update_data = {
             "IntroParagraph": intro_paragraph,
             "ConcludingParagraph": concluding_paragraph
@@ -90,23 +89,19 @@ def summarize_article(article_id, content, status_entries, systemPrompt, api_cal
 
         if valid_json:
             update_data["BulletPointSummary"] = bullet_point_summary
-            update_data["summarized"] = True  # Only mark as summarized if JSON is valid
+            update_data["summarized"] = True
 
-        # Perform the update and handle potential errors
         try:
-            supabase.table("summarizer_flow").update(update_data).eq("id", article_id).execute()
+            supabase.table(table_names['summarizer_flow']).update(update_data).eq("id", article_id).execute()
             if valid_json:
                 status_entries.append({"message": f"Summary updated successfully for ID {article_id}"})
             else:
                 status_entries.append({"message": f"Summary updated without BulletPointSummary for ID {article_id}"})
         except Exception as update_error:
-            # If the update fails, do not mark as summarized and log the error
             status_entries.append({
                 "message": f"Error updating summary for ID {article_id}",
                 "error": str(update_error)
             })
-            # Optionally, you can set 'summarized' to False explicitly if needed
-            # supabase.table("summarizer_flow").update({"summarized": False}).eq("id", article_id).execute()
 
     except Exception as e:
         status_entries.append({"message": f"Error during summarization for ID {article_id}", "error": str(e)})

@@ -11,10 +11,17 @@ from dotenv import load_dotenv
 def load_config():
     # Load environment variables from .env file
     load_dotenv()
+    env = os.getenv('APP_ENV', 'production')
 
     # Load configurations from config.yaml
     with open('config/config.yaml', 'r', encoding='utf-8') as file:
         config = yaml.safe_load(file) 
+
+    if env == 'testing':
+        # Load configurations from test_config.yaml
+        with open('config/test_config.yaml', 'r', encoding='utf-8') as file:
+            test_config = yaml.safe_load(file)
+        config.update(test_config)
 
     # Replace placeholders with actual values from environment variables
     config['supabase']['url'] = os.getenv('SUPABASE_URL')

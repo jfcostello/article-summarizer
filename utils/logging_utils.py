@@ -6,6 +6,10 @@
 import json
 from datetime import datetime, timezone
 from utils.db_utils import get_supabase_client
+from config.config_loader import load_config
+
+config = load_config()
+table_names = config.get('tables', {})
 
 def log_status(script_name, log_entries, status):
     """
@@ -27,7 +31,8 @@ def log_status(script_name, log_entries, status):
         raise ValueError(f"Invalid status '{status}'. Status must be one of {allowed_statuses}")
     
     supabase = get_supabase_client()
-    supabase.table("log_script_status").insert({
+    table_name = table_names['log_script_status']
+    supabase.table(table_name).insert({
         "script_name": script_name,
         "log_entry": json.dumps(log_entries),
         "timestamp": datetime.now(timezone.utc).isoformat(),

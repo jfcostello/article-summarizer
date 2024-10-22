@@ -4,23 +4,26 @@
 from utils.logging_utils import log_status, log_duration
 from datetime import datetime, timezone
 from utils.db_utils import get_supabase_client, fetch_table_data, update_table_data
+from config.config_loader import load_config
+
+config = load_config()
+table_names = config.get('tables', {})
 
 # Initialize Supabase client using environment variables
 supabase = get_supabase_client()
 
-def fetch_existing_urls(table_name, batch_size=1000):
+def fetch_existing_urls(batch_size=1000):
     """
     Fetch existing URLs from the specified table in batches.
     
     Args:
-        table_name (str): The name of the table to fetch URLs from.
         batch_size (int): The number of records to fetch per batch.
     
     Returns:
         set: A set of existing URLs.
     """
     existing_urls = set()
-    existing_urls_response = supabase.table(table_name).select("url").order("created_at", desc=True).limit(batch_size).execute()
+    existing_urls_response = supabase.table(table_names['summarizer_flow']).select("url").order("created_at", desc=True).limit(batch_size).execute()
     if existing_urls_response.data:
         existing_urls = {item['url'].strip() for item in existing_urls_response.data}
     
@@ -99,7 +102,7 @@ def process_feeds(table_name="summarizer_flow", parse_feed=None, script_name="sc
             # Parses the feed URL to get new entries and updates the total item count.
             total_items += len(new_entries)
             # Fetches existing URLs and deduplicates the new entries.
-            existing_urls = fetch_existing_urls(table_name)
+            existing_urls = fetch_existing_urls()
             deduplicated_entries = deduplicate_urls(new_entries, existing_urls)
 
             # Inserts the deduplicated entries into the database.

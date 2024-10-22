@@ -5,14 +5,22 @@ from utils.db_utils import fetch_table_data, update_table_data
 from utils.logging_utils import log_status, log_duration
 from datetime import datetime
 from task_management.celery_app import app
+from config.config_loader import load_config
+
+config = load_config()
+table_names = config.get('tables', {})
 
 # Fetches URLs from a specified table, processes them by scraping content, and updates the table with the results.
-async def fetch_and_process_urls(table_name, fetch_condition, scraping_function, update_fields, script_name):
+async def fetch_and_process_urls(table_name_key, fetch_condition, scraping_function, update_fields, script_name):
     # Logs the start time and initializes log entries.
     start_time = datetime.now()
     log_entries = []
     total_items = 0
     failed_items = 0
+
+    table_name = table_names.get(table_name_key)
+    if not table_name:
+        raise ValueError(f"Table name for key '{table_name_key}' not found in configuration.")
 
     # Fetches URLs from the database based on the provided condition.
     urls_to_scrape = fetch_table_data(table_name, fetch_condition)
@@ -64,7 +72,7 @@ async def run_puppeteer_scraper(scraping_function, script_name):
     try:
         # Calls fetch_and_process_urls with specific parameters and returns True on success.
         await fetch_and_process_urls(
-            table_name='summarizer_flow',
+            table_name_key='summarizer_flow',
             fetch_condition={'scraped': False},
             scraping_function=scraping_function,
             update_fields=['content'],

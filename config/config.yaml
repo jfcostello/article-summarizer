@@ -195,3 +195,10 @@ interfaces:
       - tagging_togetherai_llama8b
       - tagging_claude_haiku
 
+tables:
+  summarizer_flow: summarizer_flow
+  rss_feed_list: rss_feed_list
+  log_script_status: log_script_status
+  log_script_duration: log_script_duration
+  article_tags: article_tags
+  all_tags: all_tags
