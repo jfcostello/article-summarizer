@@ -188,9 +188,9 @@ interfaces:
       - summarizer_togetherai_llama8b
       - summarizer_claude_haiku
   tagging:
-    primary: tagging_gemini_flash
+    primary: tagging_groq_llama8b 
     fallbacks: 
-      - tagging_groq_llama8b 
+      - tagging_gemini_flash
       - tagging_replicate_llama8b
       - tagging_togetherai_llama8b
       - tagging_claude_haiku

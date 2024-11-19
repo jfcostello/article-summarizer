@@ -16,3 +16,4 @@ __pycache__/
 as-env/
 # Folder where I store context purely for CursorAI
 # .cursorai/
+.history/
