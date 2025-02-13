@@ -1,16 +1,16 @@
 # scripts/scraper/scrape_puppeteer.py
 # This script uses Pyppeteer to scrape article content from URLs stored in a Supabase database,
-# logs the scraping status and duration, and updates the database with the scraped content.
-
+# with added logging and error handling to help diagnose URL-specific issues.
 import sys
 import os
+import asyncio
+import logging
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from interfaces.scraper import Scraper
 from utils.scraping_util import run_puppeteer_scraper
-import asyncio
 from pyppeteer import launch
 
 class PuppeteerScraper(Scraper):
@@ -28,10 +28,25 @@ class PuppeteerScraper(Scraper):
         Returns:
             str: The scraped content.
         """
+        logger = logging.getLogger("PuppeteerScraper")
+        logger.info(f"Starting scrape for URL: {url}")
         browser = await launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
         page = await browser.newPage()
-        await page.goto(url, {'waitUntil': 'domcontentloaded', 'timeout': 10000})
-        content = await page.evaluate('''() => document.body.innerText || "No content found"''')
+        try:
+            logger.info(f"Navigating to URL: {url}")
+            await page.goto(url, {'waitUntil': 'domcontentloaded', 'timeout': 10000})
+            logger.info(f"Page loaded for URL: {url}")
+        except Exception as e:
+            logger.error(f"Error navigating to URL {url}: {e}")
+            await browser.close()
+            raise e
+        try:
+            content = await page.evaluate('''() => document.body.innerText || "No content found"''')
+            logger.info(f"Content scraped for URL: {url}")
+        except Exception as e:
+            logger.error(f"Error evaluating page content for URL {url}: {e}")
+            await browser.close()
+            raise e
         await browser.close()
         return content
 

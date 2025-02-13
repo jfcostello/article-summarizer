@@ -1,6 +1,9 @@
-# utils/scraping_utils.py
-# This module provides utility functions for scraping URLs and processing their content. It fetches URLs from a specified database table, processes each URL using a given scraping function, updates the database with the scraped content, and logs the status and duration of the scraping process..
+# utils/scraping_util.py
+# This module provides utility functions for scraping URLs and processing their content.
+# A per-URL timeout (using asyncio.wait_for) has been added so that if a single URL hangs,
+# it will be skipped rather than blocking the entire scraping run.
 
+import asyncio
 from utils.db_utils import fetch_table_data, update_table_data
 from utils.logging_utils import log_status, log_duration
 from datetime import datetime
@@ -38,8 +41,14 @@ async def fetch_and_process_urls(table_name_key, fetch_condition, scraping_funct
         url = record['url']
         total_items += 1
         try:
-            # Attempts to scrape the content of the URL.
-            content = await scraping_function(url)
+            # Attempts to scrape the content of the URL with a per-URL timeout.
+            try:
+                content = await asyncio.wait_for(scraping_function(url), timeout=20)
+            except asyncio.TimeoutError:
+                log_entries.append({"message": f"Timeout reached while scraping {url}"})
+                failed_items += 1
+                continue
+
             # Prepares the data to update in the database.
             update_data = {field: content for field in update_fields}
             # Marks the URL as scraped.

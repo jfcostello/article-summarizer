@@ -6,7 +6,7 @@
 
 import os
 
-def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=0, client_type="default"):
+def call_llm_api(model, content, systemPrompt, max_tokens=4000, temperature=1, client_type="default"):
     """
     Call a specified LLM API to process the content (summarization or oitagging).
 

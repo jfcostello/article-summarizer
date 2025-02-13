@@ -15,7 +15,7 @@ if __name__ == "__main__":
     success = process_articles(
         script_name=os.path.basename(__file__),
         api_call_func=lambda content, systemPrompt: call_llm_api(
-            "gemini-1.5-flash-002",
+            "gemini-2.0-flash-thinking-exp-01-21",
             content,  
             systemPrompt,  
             client_type="gemini",

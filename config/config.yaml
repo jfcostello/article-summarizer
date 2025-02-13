@@ -181,16 +181,16 @@ interfaces:
     primary: scrape_puppeteer
     fallbacks: []
   summarizer:
-    primary: summarizer_groq_llama8b
+    primary: summarizer_gemini_flash
     fallbacks:
-      - summarizer_gemini_flash
+      - summarizer_groq_llama8b
       - summarizer_replicate_llama8b
       - summarizer_togetherai_llama8b
       - summarizer_claude_haiku
   tagging:
-    primary: tagging_groq_llama8b 
+    primary: tagging_gemini_flash
     fallbacks: 
-      - tagging_gemini_flash
+      - tagging_groq_llama8b 
       - tagging_replicate_llama8b
       - tagging_togetherai_llama8b
       - tagging_claude_haiku

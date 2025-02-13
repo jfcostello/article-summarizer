@@ -1,11 +1,13 @@
-# scripts/redundancy_mamager.py
-# This script, redundancy_manager.py, manages the execution of tasks with redundancy by running all implementations of a task sequentially to ensure all work is handled. It loads configuration from a YAML file (It gets the scripts and their order from that file), executes scripts as subprocesses, and logs the status and duration of the tasks. The script also interacts with a Celery queue to send task statuses and trigger dependent tasks if new URLs are added.
-
+# scripts/redundancy_manager.py
+# This script manages the execution of tasks with redundancy.
+# The execute_script function has been updated to use a subprocess timeout (with a 300-second limit)
+# and to kill the process group if the script exceeds that timeout.
 import sys
 import os
 import yaml
 import logging
 import subprocess
+import signal
 from datetime import datetime
 from celery import Celery
 
@@ -42,7 +44,6 @@ class RedundancyManager:
         Returns:
             dict: Configuration dictionary loaded from the file.
         """     
-        
         with open(config_path, 'r', encoding='utf-8') as file:
             return yaml.safe_load(file)
 
@@ -50,10 +51,9 @@ class RedundancyManager:
         """
         Execute all implementations of a task sequentially, running fallbacks only if 
         the previous implementation did not return a status of "Success"
-        Any other status, or no status, results in the next script running
-        If Success is returned, it runs no further scripts
-        If run_all_scripts arg is given, it runs all scripts back to back
-        regardless of status
+        Any other status, or no status, results in the next script running.
+        If Success is returned, it runs no further scripts.
+        If run_all_scripts arg is given, it runs all scripts back to back regardless of status.
 
         Args:
             task_name (str): Name of the task to be executed.
@@ -103,7 +103,7 @@ class RedundancyManager:
                 self.logger.error(f"Script {impl} returned an unexpected status or no status: {result}")
 
             # Conditional break based on status and run_all_scripts flag
-            if not run_all_scripts and result == "Success":  # <-- Corrected condition
+            if not run_all_scripts and result == "Success":
                 # Skip remaining implementations for this task ONLY if run_all_scripts is False
                 break
 
@@ -133,26 +133,39 @@ def execute_script(script_path):
         script_path (str): The path to the script to be executed.
     
     Returns:
-        str: "Success" if the script executed successfully, "Failure" if it failed.
+        str: "Success" if the script executed successfully, or a URL count if applicable.
     """
     try:
-        result = subprocess.run([sys.executable, script_path], capture_output=True, text=True)
-        if result.stdout:
-            logging.info(f"Script Output: {result.stdout.strip()}")
+        process = subprocess.Popen(
+            [sys.executable, script_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            preexec_fn=os.setsid
+        )
+        try:
+            stdout, stderr = process.communicate(timeout=300)
+        except subprocess.TimeoutExpired:
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            stdout, stderr = process.communicate()
+            logging.error(f"Script timed out: {script_path}")
+            return "Error"
+        if stdout:
+            logging.info(f"Script Output: {stdout.strip()}")
             try:
-                new_url_count = int(result.stdout.strip())
+                new_url_count = int(stdout.strip())
                 return new_url_count
             except ValueError:
                 pass
-        if result.stderr:
-            logging.error(f"Script Error: {result.stderr.strip()}")
+        if stderr:
+            logging.error(f"Script Error: {stderr.strip()}")
         
-        if result.returncode == 0:
+        if process.returncode == 0:
             return "Success"
-        elif result.returncode == 2:
+        elif process.returncode == 2:
             return "Partial"
         else:
-            logging.error(f"Script returned non-zero exit code: {result.returncode}")
+            logging.error(f"Script returned non-zero exit code: {process.returncode}")
             return "Error"
     except Exception as e:
         logging.error(f"Error executing script {script_path}: {e}")
@@ -171,5 +184,3 @@ if __name__ == "__main__":
     # Trigger the next tasks if new URLs were added
     if total_new_urls > 0:
         app.send_task('tasks.run_dependent_tasks')
-
-
